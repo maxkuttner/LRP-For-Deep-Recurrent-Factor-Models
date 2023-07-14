@@ -1,4 +1,3 @@
-
 #%%
 import numpy as np
 from keras.models import Sequential
@@ -6,6 +5,7 @@ from keras.layers import LSTM, Dense, Dropout
 import keras.backend as K
 import tensorflow as tf
 from numpy import newaxis as na
+import tensorflow as tf
 
 #%%
 
@@ -44,7 +44,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
         b_i, b_f, b_c, b_o = tf.split(b, num_or_size_splits=4, axis=0)
 
         # Get the number of timesteps and hidden units
-        timesteps = input_data.shape[1]
+        self.timesteps = input_data.shape[1]
         print("timesteps", timesteps)
         hidden_units = self.units
 
@@ -64,7 +64,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
         c_prev = np.zeros((1, hidden_units))
 
         # Perform forward pass for each timestep
-        for t in range(timesteps):
+        for t in range(self.timesteps):
             # Get the input at the current timestep
             
             x = input_data[:, t, :]
@@ -109,7 +109,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
             self.cell_input_signal.append( np.array(cell_input_signal) ) # (time_steps, batch_size, dimensions )
             self.cell_state_signal.append( np.array(cell_state_signal) ) # (time_steps, batch_size, dimensions )
 
-    def lstm_lrp_rudder(self, input_data, rel_prev):
+    def lstm_lrp_rudder(self, input_data, rel_prev, aggregate=True):
         """_summary_
 
         Args:
@@ -118,23 +118,34 @@ class CustomLSTM(tf.keras.layers.LSTM):
 
         Returns:
             array: relevance score for this lstm layer
-            
+        
+        
+        source: https://arxiv.org/pdf/1806.07857.pdf
         """
-        
-        
-        # source: https://arxiv.org/pdf/1806.07857.pdf
         
         # compute all activations (gates and signals for lstm layer)
         self.get_lstm_states(input_data)
         
+        # the output of an LSTM layer with return_sequence=True must be handled -> 
+        # if return_sequence=True then rel_prev.shape = (timestpes, M)
+        # we can either take option 1) the last relevance scores in the sequence
+        #                    option 2) aggreagte the relevance scores of the sequence
         
-        if len(rel_prev.shape) == 2:
+        
+        print("lstm_lrp_rudder - aggregate: ",aggregate)
+        
+        if len(rel_prev.shape) == 2 and aggregate:
+            print("DO AGGREGATE")
+            rel_prev = np.mean(rel_prev, axis=0)
+            
+        elif len(rel_prev.shape) == 2 and not aggregate:
+            print("DO NOT AGGREGATE")
             rel_prev = rel_prev[-1, :]
+            
+        
         
         # initialise relevance
         RyT = rel_prev # (M, )  M...output dim of current layer
-        
-
         
         # Get the LSTM weights and biases
         W = self.get_weights()[0]  # LSTM weights (D, 4M) - 4 because of 4 gates
@@ -143,16 +154,15 @@ class CustomLSTM(tf.keras.layers.LSTM):
         # Get the LSTM weights and biases
         b = self.get_weights()[2]  # Biases (4M,)
         b_i, b_f, b_c, b_o = tf.split(b, num_or_size_splits=4, axis=0) # (M,), (M,), (M,), (M,)
-
-        print("--asdfasdfasdf----")
     
         # Extract the last cell state
         cT = np.array(self.cell_states)[-1, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions, )
 
+        
         # Collect relevance scores
         relevance = []
 
-        for t in reversed(range(timesteps)): 
+        for t in reversed(range(self.timesteps)): 
             
             
             # rules according to Rudder
@@ -162,12 +172,12 @@ class CustomLSTM(tf.keras.layers.LSTM):
             
             Rzt =  (zt * it) * RyT / cT
             
-            print("ööööööööööööööööööööööööööööö")
-            print("zt.shape",zt.shape)
-            print("it.shape", it.shape)
-            print("cT.shape", cT.shape)
-            print("RyT.shape", RyT.shape)
-            print("Rzt.shape", Rzt.shape)
+            # for debugging
+            #print("zt.shape",zt.shape)
+            #print("it.shape", it.shape)
+            #print("cT.shape", cT.shape)
+            #print("RyT.shape", RyT.shape)
+            #print("Rzt.shape", Rzt.shape)
             
             
             # using linear rule
@@ -211,18 +221,97 @@ class LSTMModel(tf.keras.Model):
         output = self.dense2(dense1_output)
         
         
-        # append all outputs to giant list
-        self.activations = [{"output"      : lstm1_output.numpy(), 
-                             "hidden_state": hidden_state1.numpy(),
-                             "cell_state"  : cell_state1.numpy()},
-                            {"output"      : lstm2_output.numpy(), 
-                             "hidden_state": hidden_state2.numpy(),
-                             "cell_state"  : cell_state2.numpy()},
-                            {"output"      : dense1_output.numpy()},
-                            {"output"      : output.numpy()}]
+        # append all activation of the forward pass to dictionary
+        self.activations = [{"output": lstm1_output,
+                        "hidden_state": hidden_state1,
+                        "cell_state": cell_state1},
+                    {"output": lstm2_output,
+                        "hidden_state": hidden_state2,
+                        "cell_state": cell_state2},
+                    {"output": dense1_output},
+                    {"output": output}]
         
         # final output
         return output
+    
+    
+    def get_activations(self):
+        """Return the activations after the last forward pass."""
+        
+        
+        new_list = []
+        
+        for dic in self.activations:
+            
+            new_dic = {}
+            
+            for key, item in dic:
+                new_dic["key"] = item.numpy()
+                
+            new_list.append(new_dic)
+        
+        return new_list
+    
+    def backpropagate_relevance(self, input_data, aggregate):
+    
+        # feedforward
+        out = self(input_data)
+        
+        # get prediction and initialise relevance scores
+        Rj = out.numpy()[0]
+        
+        # Iterate through each layer in reverse order
+        for i in reversed(range(len(self.layers))):
+            
+            # get the current layer and the lower layer
+            current_layer = self.layers[i]
+            lower_layer   = self.layers[i-1]
+            
+            # print info
+            if i >0:
+                print("Backpropagating Rel for Layer", current_layer, "to", lower_layer)
+            
+            # linear to linear
+            if isinstance(current_layer, tf.keras.layers.Dense): 
+                
+                # get the number of output-nodes in the lower layer
+                num_nodes_in_lower_layer = self.activations[i-1]["output"].numpy().shape[1] #  (batch_size, timesteps, D) -> (D, )
+            
+                
+                w = current_layer.get_weights()[0] # get the weights for the last layer
+                b = current_layer.get_weights()[1] # get the biases for the last layer
+                
+                
+
+                # if last layer -> inititalise zj with the final prediction
+                if (i == len(self.layers) - 1): 
+                    zj = Rj 
+                else:
+                    zj = self.activations[i]["output"].numpy()[0,:] # shape (M, )
+                
+                # compute the activations in the lower layer
+                zi = self.activations[i-1]["output"].numpy()[0,:] # shape (D, )
+                
+                # compute by relevance of layer by linear rule
+                Rj = lrp_linear(w, b, zi, zj, Rj, num_nodes_in_lower_layer)
+                
+            elif isinstance(current_layer, tf.keras.layers.LSTM):
+                
+                #print(self.activations[i-1]["output"].shape)
+                
+                if i == 0:
+                    Rj = current_layer.lstm_lrp_rudder(input_data, Rj, aggregate)
+                else:
+                
+                    input_tmp = self.activations[i-1]["output"].numpy()
+
+                    print("aggregate:", aggregate)
+                    Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
+
+            print("Rj.shape", Rj.shape)
+                
+        return Rj
+
     
 
 def lrp_linear(w, b, z_i, z_j, Rj, nlower, eps=1e-4, delta=0.0):
@@ -273,102 +362,33 @@ def lrp_linear(w, b, z_i, z_j, Rj, nlower, eps=1e-4, delta=0.0):
 
 
 
-
-
-# test setup ------------------------------------------------------------------------------------
-
-# Create an instance of your custom model
-model = LSTMModel()
-
-# Compile the model
-model.compile(optimizer='adam', loss='mean_squared_error')
-
-batch_size = 1  # Number of samples in a batch
-timesteps = 5  # Number of time steps
-input_dim = 3  # Dimensionality of each input
-
-input_data = np.random.rand(batch_size, timesteps, input_dim) # sample input
-# ---------------------------------------------------------------------------------------------
-
-out = model(input_data)
-
-#if model.layers[1].return_sequences: #<- built this into the backpropagation algo
-
-#model.activations[0]["hidden_state"]
-model.activations[-4]["output"].shape
-
-
-# outputs: (1, 5, 50) -> (1, 25) -> (1, 8) -> (1, 1)
-
-
-
-#%%
-
-def backpropagate_relevance(model, input_data):
+if __name__ == "__main__":
     
-    # feedforward
+    # test setup ------------------------------------------------------------------------------------
+    # Create an instance of your custom model
+    model = LSTMModel()
+
+    # Compile the model
+    model.compile(optimizer='adam', loss='mean_squared_error')
+
+    batch_size = 1  # Number of samples in a batch
+    timesteps = 5  # Number of time steps
+    input_dim = 3  # Dimensionality of each input
+
+    input_data = np.random.rand(batch_size, timesteps, input_dim) # sample input
+    # ---------------------------------------------------------------------------------------------
+
     out = model(input_data)
-    
-    # get prediction and initialise relevance scores
-    Rj = out.numpy()[0]
-    
-    print("Rj:", Rj)
-    
-    # Iterate through each layer in reverse order
-    for i in reversed(range(len(model.layers))):
-        
-        # get the current layer and the lower layer
-        current_layer = model.layers[i]
-        lower_layer   = model.layers[i-1]
-        
 
-        
-        # print info
-        if i >0:
-            print("Backpropagating Rel for Layer", current_layer, "to", lower_layer)
-        
-        # linear to linear
-        if isinstance(current_layer, tf.keras.layers.Dense): 
-            
-             # get the number of output-nodes in the lower layer
-            num_nodes_in_lower_layer = model.activations[i-1]["output"].\
-                shape[1] #  (batch_size, timesteps, D) -> (D, )
-        
-            
-            w = current_layer.get_weights()[0] # get the weights for the last layer
-            b = current_layer.get_weights()[1] # get the biases for the last layer
-            
-            
+    #if model.layers[1].return_sequences: #<- built this into the backpropagation algo
 
-            # if last layer -> inititalise zj with the final prediction
-            if (i == len(model.layers) - 1): 
-                zj = Rj 
-            else:
-                zj = model.activations[i]["output"][0,:] # shape (M, )
-            
-            # compute the activations in the lower layer
-            zi = model.activations[i-1]["output"][0,:] # shape (D, )
-            
-            # compute by relevance of layer by linear rule
-            Rj = lrp_linear(w, b, zi, zj, Rj, num_nodes_in_lower_layer)
-            
-        elif isinstance(current_layer, tf.keras.layers.LSTM):
-            
-            #print(model.activations[i-1]["output"].shape)
-            print(Rj.shape)
-            
-            if i == 0:
-                Rj = current_layer.lstm_lrp_rudder(input_data, Rj)
-            else:
-            
-                input_tmp = model.activations[i-1]["output"] 
+    #model.activations[0]["hidden_state"]
 
-                Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj)
-
-            
-            
-    return Rj
+    for ac in model.activations:
+        print(ac["output"].shape)
 
 
-backpropagate_relevance(model, input_data)
-# %%
+    # outputs: (1, 5, 50) -> (1, 25) -> (1, 8) -> (1, 1)
+
+    print(model.backpropagate_relevance(input_data, False))
+
