@@ -3,9 +3,16 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout
 import keras.backend as K
-import tensorflow as tf
 from numpy import newaxis as na
 import tensorflow as tf
+
+# only display logging messages that correspond to errors
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+import matplotlib.pyplot as plts
+from tqdm import tqdm
+
+import matplotlib.pyplot as plt
 
 #%%
 
@@ -45,7 +52,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
 
         # Get the number of timesteps and hidden units
         self.timesteps = input_data.shape[1]
-        print("timesteps", timesteps)
+        
         hidden_units = self.units
 
         # Initialize lists to store the hidden states and cell states
@@ -132,14 +139,14 @@ class CustomLSTM(tf.keras.layers.LSTM):
         #                    option 2) aggreagte the relevance scores of the sequence
         
         
-        print("lstm_lrp_rudder - aggregate: ",aggregate)
+        #print("lstm_lrp_rudder - aggregate: ",aggregate)
         
         if len(rel_prev.shape) == 2 and aggregate:
-            print("DO AGGREGATE")
+            #print("DO AGGREGATE")
             rel_prev = np.mean(rel_prev, axis=0)
             
         elif len(rel_prev.shape) == 2 and not aggregate:
-            print("DO NOT AGGREGATE")
+            #print("DO NOT AGGREGATE")
             rel_prev = rel_prev[-1, :]
             
         
@@ -184,7 +191,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
             relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rzt, 3))
         
         
-        print("LRP LSTM - DONE")
+        #print("LRP LSTM - DONE")
         return np.array(relevance)
 
 
@@ -192,12 +199,8 @@ class CustomLSTM(tf.keras.layers.LSTM):
 # Define your model class
 class LSTMModel(tf.keras.Model):
     
-    def __init__(self):
-        super(LSTMModel, self).__init__()
-        
-        lstm_units = 50
-        input_dim = 3
-        timesteps = 5
+    def __init__(self, lstm_units, input_dim, timesteps):
+        super(LSTMModel, self).__init__() # calls constructor of parent class: tf.keras.Model
         
         # set return_state = True to return the last state in addition to the output. Default: False. 
         self.lstm1 = CustomLSTM(units=lstm_units, input_shape=(timesteps, input_dim),
@@ -268,8 +271,8 @@ class LSTMModel(tf.keras.Model):
             lower_layer   = self.layers[i-1]
             
             # print info
-            if i >0:
-                print("Backpropagating Rel for Layer", current_layer, "to", lower_layer)
+            # if i >0:
+            #     print("Backpropagating Rel for Layer", current_layer, "to", lower_layer)
             
             # linear to linear
             if isinstance(current_layer, tf.keras.layers.Dense): 
@@ -305,10 +308,10 @@ class LSTMModel(tf.keras.Model):
                 
                     input_tmp = self.activations[i-1]["output"].numpy()
 
-                    print("aggregate:", aggregate)
+                    # print("aggregate:", aggregate)
                     Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
 
-            print("Rj.shape", Rj.shape)
+            # print("Rj.shape", Rj.shape)
                 
         return Rj
 
@@ -358,6 +361,78 @@ def lrp_linear(w, b, z_i, z_j, Rj, nlower, eps=1e-4, delta=0.0):
     Rin = message.sum(axis=1)              # shape (D,)
 
     return Rin
+
+
+
+def rolling_fit(model, X_train, y_train, big_window_size, validation_size, small_window_size):
+    """ToDo: Generate docstrings 
+
+    Args:
+        model (_type_): _description_
+        X_train (_type_): _description_
+        y_train (_type_): _description_
+        big_window_size (_type_): _description_
+        validation_size (_type_): _description_
+        small_window_size (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    # Define the window size to train the model on
+    big_window_size = 60
+
+    # Define the size of the validation set for the rolling window
+    validation_size = 1 / 60
+
+    # Calculate the number of rolling windows and the size of the validation set
+    num_windows = len(X_train) - big_window_size 
+    validation_set_size = int(num_windows * validation_size)
+
+    # collect the predictions in a list
+    predictions = []
+
+    # collect relevance scores in a list
+    relevance = []
+
+    for i in tqdm(range(num_windows)):
+        start_index = i
+        end_index = i + small_window_size
+
+        X_train_window = X_train[start_index:end_index]
+        y_train_window = y_train[start_index:end_index]
+
+        # Create a validation set from a portion of the rolling window
+        X_val = X_train[end_index : end_index + validation_set_size]
+        y_val = y_train[end_index : end_index + validation_set_size]
+
+        # Train the model on the current rolling window
+        model.fit(X_train_window,
+                y_train_window,
+                validation_data=(X_val, y_val),
+                epochs=10,
+                batch_size=32,
+                verbose=False)
+
+        # Predict the next timestep
+        X_next = X_train[end_index:end_index + 1]  # Get the last observation in the validation set
+        
+        next_pred = model.predict(X_next, verbose=False)  # Predict the next timestep based on X_next
+        predictions.append(next_pred)
+        
+        rel = model.backpropagate_relevance(X_next, False)
+        relevance.append(rel)
+        
+
+    predictions =  np.array(predictions)[:, 0, 0]
+    plt.plot(y_train[big_window_size:], label='Actual')
+    plt.plot(predictions, label='Predicted')
+    plt.xlabel('Timestep')
+    plt.ylabel('Response')
+    plt.legend()
+    plt.show()
+    
+    return predictions, relevance
 
 
 
