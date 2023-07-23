@@ -199,14 +199,16 @@ class CustomLSTM(tf.keras.layers.LSTM):
 # Define your model class
 class LSTMModel(tf.keras.Model):
     
-    def __init__(self, lstm_units, input_dim, timesteps):
+    def __init__(self, lstm_units, input_dim, timesteps): # calls the constructor of the child class (LSTMModel)
         super(LSTMModel, self).__init__() # calls constructor of parent class: tf.keras.Model
+        
+        #self.units = [lstm_units, 32, 8, 1]
         
         # set return_state = True to return the last state in addition to the output. Default: False. 
         self.lstm1 = CustomLSTM(units=lstm_units, input_shape=(timesteps, input_dim),
                                           return_sequences=True, return_state=True)
-        self.lstm2 = CustomLSTM(units=25, return_sequences=False, return_state=True)
-        self.dense1 = tf.keras.layers.Dense(8)
+        self.lstm2 = CustomLSTM(units=32, return_sequences=False, return_state=True)
+        self.dense1 = tf.keras.layers.Dense(16)
         self.dense2 = tf.keras.layers.Dense(1)  # Output layer
         
     def call(self, inputs):
@@ -314,8 +316,97 @@ class LSTMModel(tf.keras.Model):
             # print("Rj.shape", Rj.shape)
                 
         return Rj
-
     
+    
+def rolling_fit(self, X_train, y_train, big_window_size=60, validation_size=1/60, small_window_size=5, do_plot=True):
+    """
+    Perform a rolling window training and prediction using a custom deep LSTM model.
+
+    Parameters:
+        X_train (numpy.ndarray): Input features for training the neural network.
+        y_train (numpy.ndarray): Target values corresponding to X_train for training.
+        big_window_size (int): The size of the big rolling window used for training.
+        validation_size (float): The proportion of the big window to be used as a validation set.
+        small_window_size (int): The size of the smaller rolling window within the big window.
+
+    Returns:
+        tuple: A tuple containing:
+            - predictions (numpy.ndarray): An array of predicted values for each timestep in the rolling window.
+            - relevance (list): A list of relevance scores computed during the rolling window prediction.
+
+    The 'rolling_fit' function uses a neural network model to perform a rolling window training and prediction
+    on the provided input data 'X_train' and corresponding target values 'y_train'. It trains the model on 
+    smaller rolling windows within a big rolling window of size 'big_window_size', and evaluates the model's 
+    performance using a validation set of size 'validation_size' within each rolling window.
+
+    The function returns two outputs:
+        1. 'predictions': An array of predicted values for each timestep in the rolling window.
+        2. 'relevance': A list of relevance scores computed during the rolling window prediction.
+    """
+    
+    # Define the window size to train the model on
+    big_window_size = 60
+
+    # Define the size of the validation set for the rolling window
+    validation_size = 1 / 60
+
+    # Calculate the number of rolling windows and the size of the validation set
+    num_windows = len(X_train) - big_window_size 
+    validation_set_size = int(num_windows * validation_size)
+
+    # collect the predictions in a list
+    predictions = []
+
+    # collect relevance scores in a list
+    relevance = []
+
+    for i in tqdm(range(num_windows)):
+        start_index = i
+        end_index = i + small_window_size
+
+        X_train_window = X_train[start_index:end_index]
+        y_train_window = y_train[start_index:end_index]
+
+        # Create a validation set from a portion of the rolling window
+        X_val = X_train[end_index : end_index + validation_set_size]
+        y_val = y_train[end_index : end_index + validation_set_size]
+
+        # Train the model on the current rolling window
+        self.fit(X_train_window,
+                 y_train_window,
+                 validation_data=(X_val, y_val),
+                 epochs=10,
+                 batch_size=32,
+                 verbose=False)
+
+        # Predict the next timestep
+        X_next = X_train[end_index:end_index + 1]  # Get the last observation in the validation set
+
+        next_pred = self.predict(X_next, verbose=False)  # Predict the next timestep based on X_next
+        predictions.append(next_pred)
+
+        rel = self.backpropagate_relevance(X_next, False)
+        relevance.append(rel)
+
+
+    predictions =  np.array(predictions)[:, 0, 0]
+    
+    if do_plot:
+        plt.plot(y_train[big_window_size:], label='Actual')
+        plt.plot(predictions, label='Predicted')
+        plt.xlabel('Timestep')
+        plt.ylabel('Response')
+        plt.legend()
+        plt.show()
+
+
+    # Compute mse
+    self.mse = np.mean((predictions - y_train[big_window_size:])**2)
+
+    return predictions, relevance
+
+        
+        
 
 def lrp_linear(w, b, z_i, z_j, Rj, nlower, eps=1e-4, delta=0.0):
     """
@@ -363,76 +454,6 @@ def lrp_linear(w, b, z_i, z_j, Rj, nlower, eps=1e-4, delta=0.0):
     return Rin
 
 
-
-def rolling_fit(model, X_train, y_train, big_window_size, validation_size, small_window_size):
-    """ToDo: Generate docstrings 
-
-    Args:
-        model (_type_): _description_
-        X_train (_type_): _description_
-        y_train (_type_): _description_
-        big_window_size (_type_): _description_
-        validation_size (_type_): _description_
-        small_window_size (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-
-    # Define the window size to train the model on
-    big_window_size = 60
-
-    # Define the size of the validation set for the rolling window
-    validation_size = 1 / 60
-
-    # Calculate the number of rolling windows and the size of the validation set
-    num_windows = len(X_train) - big_window_size 
-    validation_set_size = int(num_windows * validation_size)
-
-    # collect the predictions in a list
-    predictions = []
-
-    # collect relevance scores in a list
-    relevance = []
-
-    for i in tqdm(range(num_windows)):
-        start_index = i
-        end_index = i + small_window_size
-
-        X_train_window = X_train[start_index:end_index]
-        y_train_window = y_train[start_index:end_index]
-
-        # Create a validation set from a portion of the rolling window
-        X_val = X_train[end_index : end_index + validation_set_size]
-        y_val = y_train[end_index : end_index + validation_set_size]
-
-        # Train the model on the current rolling window
-        model.fit(X_train_window,
-                y_train_window,
-                validation_data=(X_val, y_val),
-                epochs=10,
-                batch_size=32,
-                verbose=False)
-
-        # Predict the next timestep
-        X_next = X_train[end_index:end_index + 1]  # Get the last observation in the validation set
-        
-        next_pred = model.predict(X_next, verbose=False)  # Predict the next timestep based on X_next
-        predictions.append(next_pred)
-        
-        rel = model.backpropagate_relevance(X_next, False)
-        relevance.append(rel)
-        
-
-    predictions =  np.array(predictions)[:, 0, 0]
-    plt.plot(y_train[big_window_size:], label='Actual')
-    plt.plot(predictions, label='Predicted')
-    plt.xlabel('Timestep')
-    plt.ylabel('Response')
-    plt.legend()
-    plt.show()
-    
-    return predictions, relevance
 
 
 
