@@ -1,4 +1,4 @@
-<p align="center"><img width=% src="./static/logo.png"></p>
+<p align="center"><img width=% src="./static/logo.png" style="margin-bottom=0px"></p>
 <div align="center">
 
 ![Static Badge](https://img.shields.io/badge/Python-3.11-green?style=flat-square&logo=python&logoColor=%23fff)

@@ -202,41 +202,52 @@ class CustomLSTM(tf.keras.layers.LSTM):
 # Define your model class
 class LSTMModel(tf.keras.Model):
     
-    def __init__(self, lstm_units, input_dim, timesteps, l2_lambda=0.02): # calls the constructor of the child class (LSTMModel)
+    def __init__(self, lstm_units, input_dim, timesteps, l2_lambda=0.01): # calls the constructor of the child class (LSTMModel)
         super(LSTMModel, self).__init__() # calls constructor of parent class: tf.keras.Model
         
         # Set return_state = True to return the last state in addition to the output. Default: False. 
-        self.lstm1 = CustomLSTM(
-            units=lstm_units,
-            input_shape=(timesteps, input_dim),
-            return_sequences=True,
-            return_state=True,
-            kernel_regularizer=tf.keras.regularizers.l2(l2_lambda)  # L2 regularization for the first LSTM layer
-        )
+        # self.lstm1 = CustomLSTM(
+        #     units=lstm_units,
+        #     input_shape=(timesteps, input_dim),
+        #     return_sequences=True,
+        #     return_state=True,
+        #     kernel_regularizer=tf.keras.regularizers.l2(l2_lambda)  # L2 regularization for the first LSTM layer
+        # )
         self.lstm2 = CustomLSTM(
             units=32,
             return_sequences=False,
             return_state=True,
             kernel_regularizer=tf.keras.regularizers.l2(l2_lambda)  # L2 regularization for the second LSTM layer
         )
+        self.dropout1 = tf.keras.layers.Dropout(0.2) 
+        
         self.dense1 = tf.keras.layers.Dense(
             16,
             kernel_regularizer=tf.keras.regularizers.l2(l2_lambda)  # L2 regularization for the first dense layer
         )
+        self.dropout2 = tf.keras.layers.Dropout(0.2) 
         self.dense2 = tf.keras.layers.Dense(
             1,
             kernel_regularizer=tf.keras.regularizers.l2(l2_lambda)  # L2 regularization for the output layer
         )
         
+
+    # Override the layers property to exclude dropout layers
+    @property
+    def layers(self):
+        return [layer for layer in super().layers if not isinstance(layer, tf.keras.layers.Dropout)]
+        
     def call(self, inputs):
         
         
         # LSTM
-        lstm1_output, hidden_state1, cell_state1 = self.lstm1(inputs)
-        lstm2_output, hidden_state2, cell_state2 = self.lstm2(lstm1_output)
+        # lstm1_output, hidden_state1, cell_state1 = self.lstm1(inputs)
+        lstm2_output, hidden_state2, cell_state2 = self.lstm2(inputs)
+        lstm2_output = self.dropout1(lstm2_output)
         
         # Dense
         dense1_output = self.dense1(lstm2_output)
+        dense1_output = self.dropout2(dense1_output)
     
         
         # Apply dense2 layer for final output
@@ -244,9 +255,10 @@ class LSTMModel(tf.keras.Model):
         
         
         # append all activation of the forward pass to dictionary
-        self.activations = [{"output": lstm1_output,
-                        "hidden_state": hidden_state1,
-                        "cell_state": cell_state1},
+        self.activations = [
+            # {"output": lstm1_output,
+            #             "hidden_state": hidden_state1,
+            #             "cell_state": cell_state1},
                     {"output": lstm2_output,
                         "hidden_state": hidden_state2,
                         "cell_state": cell_state2},
@@ -292,6 +304,8 @@ class LSTMModel(tf.keras.Model):
             # print info
             # if i >0:
             #     print("Backpropagating Rel for Layer", current_layer, "to", lower_layer)
+             # Skip dropout layers
+             
             
             # linear to linear
             if isinstance(current_layer, tf.keras.layers.Dense): 
@@ -371,8 +385,10 @@ def rolling_fit(X_train, y_train, big_window_size=60, validation_size=1/60, smal
         y_val = y_val.reshape(-1, 1)
         
         # Define a new model at each iteration
-        model = LSTMModel(lstm_units=64, input_dim=X_train.shape[2], 
-                          timesteps=small_window_size, l2_lambda=0.01)
+        model = LSTMModel(lstm_units=32, input_dim=X_train.shape[2], 
+                          timesteps=small_window_size, l2_lambda=0.05)
+        print("----------------------------------------------------------------------------------------------")
+        print(model.layers)
 
         # Compile the model
         model.compile(optimizer='adam', loss='mean_squared_error')
