@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model
 from keras.callbacks import Callback
@@ -6,16 +7,13 @@ from keras.regularizers import L2
 from CustomLayers import CustomLSTM
 import os
 from tqdm import tqdm
-
 import matplotlib.pyplot as plt
+
+import copy
 
 # LRP
 from LRPMethods import lrp_linear
-
-
-print("Dependencies: - DONE\n\n")
-
-
+print("LSTM Load Dependencies: DONE ✔️\n\n")
 
 # Define your custom callback to capture activations
 class ActivationLogger(Callback):
@@ -50,6 +48,15 @@ class CustomModel(tf.keras.Model):
     @property
     def layers(self):
         return [layer for layer in super().layers if not isinstance(layer, Dropout)]
+    
+    def reinitialize(self):
+        for l in self.layers:
+            if hasattr(l,"kernel_initializer"):
+                l.kernel.assign(l.kernel_initializer(tf.shape(l.kernel)))
+            if hasattr(l,"bias_initializer"):
+                l.bias.assign(l.bias_initializer(tf.shape(l.bias)))
+            if hasattr(l,"recurrent_initializer"):
+                l.recurrent_kernel.assign(l.recurrent_initializer(tf.shape(l.recurrent_kernel)))
 
     def backpropagate_relevance(self, input_data, aggregate):
         
@@ -102,7 +109,13 @@ def rolling_fit(input_layer, output_layer,
     predictions = []
     relevance = []
 
-    print("Starting rolling window fitting...")
+    tmp_model = CustomModel(inputs=input_layer, outputs=output_layer) 
+    init_weights = tmp_model.get_weights()
+    tmp_model.summary()
+    
+    del tmp_model
+    
+    print("\nStarting rolling window fitting...\n")
     for i in tqdm(range(num_windows)):
         start_index = i
         end_index = i + big_window_size
@@ -114,7 +127,7 @@ def rolling_fit(input_layer, output_layer,
         X_val = X_train[end_index : end_index + validation_set_size]
         y_val = y_train[end_index : end_index + validation_set_size]
         y_val = y_val.reshape(-1, 1)
-
+        
         # Create an instance of your CustomModel
         model = CustomModel(inputs=input_layer, outputs=output_layer)  # Adjust this with your input and output layers
         model.compile(optimizer='adam', loss='mean_squared_error')
@@ -134,6 +147,8 @@ def rolling_fit(input_layer, output_layer,
 
         rel = model.backpropagate_relevance(X_next, False)
         relevance.append(rel)
+        
+        model.set_weights(init_weights) # reinitialise weights
 
     predictions = np.array(predictions)[:, 0, 0]
 
@@ -155,56 +170,57 @@ def rolling_fit(input_layer, output_layer,
     return predictions, relevance
 
 
-# ----------------------------- MODEL CONSTRUCTION ----------------------------------
-timesteps = 5
-input_dim = 16
-input_shape = (timesteps, input_dim)
 
-# Create input layer
-input_layer = Input(shape=input_shape, name="Input")
-# Create a CustomLSTM layer
-lstm_output, hidden_state, cell_state = CustomLSTM(units=32, return_sequences=False,
-                                                   return_state=True,
-                                                   kernel_regularizer=L2(0.02),
-                                                   name="CustomLSTM_1")(input_layer)
-# Apply dropout to LSTM output
-dropout1 = Dropout(0.2)(lstm_output)
-# Create a Dense layer
-dense1 = Dense(16, kernel_regularizer=L2(0.02), name="Dense_1")(dropout1)
-# Apply dropout to dense1 output
-dropout2 = Dropout(0.2)(dense1)
-# Create the final output layer
-output_layer = Dense(1, kernel_regularizer=L2(0.02), name="Dense_2_Final")(dropout2)
-# ----------------------------- END: MODEL CONSTRUCTION ----------------------------------
+if __name__ == '__main__':
+    # ----------------------------- MODEL CONSTRUCTION ----------------------------------
+    timesteps = 5
+    input_dim = 16
+    input_shape = (timesteps, input_dim)
 
-
-
-# # Create an instance of your custom model
-# custom_model = CustomModel(inputs=input_layer, outputs=output_layer)
-
-# # Compile the model
-# custom_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
-
-# # Generate some example training data (replace this with your actual data)
-import numpy as np
-num_samples = 100
-X_train = np.random.rand(num_samples, timesteps, input_dim)
-y_train = np.random.rand(num_samples, 1)
-
-# # Train the model
-# custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
+    # Create input layer
+    input_layer = Input(shape=input_shape, name="Input")
+    # Create a CustomLSTM layer
+    lstm_output, hidden_state, cell_state = CustomLSTM(units=32, return_sequences=False,
+                                                    return_state=True,
+                                                    kernel_regularizer=L2(0.02),
+                                                    name="CustomLSTM_1")(input_layer)
+    # Apply dropout to LSTM output
+    dropout1 = Dropout(0.2)(lstm_output)
+    # Create a Dense layer
+    dense1 = Dense(16, kernel_regularizer=L2(0.02), name="Dense_1")(dropout1)
+    # Apply dropout to dense1 output
+    dropout2 = Dropout(0.2)(dense1)
+    # Create the final output layer
+    output_layer = Dense(1, kernel_regularizer=L2(0.02), name="Dense_2_Final")(dropout2)
+    # ----------------------------- END: MODEL CONSTRUCTION ----------------------------------
 
 
 
-# After training, capture activations using the callback
-batch_size = 1  # Number of samples in a batch
-timesteps = 5  # Number of time steps
-input_dim = 16  # Dimensionality of each input
-input_data = np.random.rand(1, timesteps, input_dim) # sample input
+    # Create an instance of your custom model
+    custom_model = CustomModel(inputs=input_layer, outputs=output_layer)
+
+    # Compile the model
+    custom_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
+
+    # # Generate some example training data (replace this with your actual data)
+    import numpy as np
+    num_samples = 100
+    X_train = np.random.rand(num_samples, timesteps, input_dim)
+    y_train = np.random.rand(num_samples, 1)
+
+    # # Train the model
+    # custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
 
 
-# print(custom_model.backpropagate_relevance(input_data, False))
+
+    # After training, capture activations using the callback
+    batch_size = 1  # Number of samples in a batch
+    timesteps = 5  # Number of time steps
+    input_dim = 16  # Dimensionality of each input
+    input_data = np.random.rand(1, timesteps, input_dim) # sample input
 
 
-pred, rel = rolling_fit(input_layer=input_layer, output_layer=output_layer,
-                        X_train=X_train, y_train=y_train)
+    # print(custom_model.backpropagate_relevance(input_data, False))
+
+
+
