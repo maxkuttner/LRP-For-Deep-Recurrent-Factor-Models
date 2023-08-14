@@ -84,14 +84,16 @@ model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
 
 # Print the model summary
 model.summary()
-
 ```
 
-# Experimentation 
+## LRP
 
-- [Replication of Experiments in <i>'Deep Factor Models'</i>]() 
-- You can find the literature review for this project [[here]](./static/LiteratureReview.pdf).
+After having fit the model either by the customary `model.fit()` method or through a rolling fit using `model.rolling_fit()` (for detail see [Example]()).
 
+
+# Example
+
+- [Replication of Experiments in <i>'Deep Factor Models'</i>](./Notebooks/DeepFactorModels.ipynb)
 # Data
 
 - We gatherd the factor data from the openly available factor data set provided by [Andrew Y. Chen and Tom Zimmermann](https://www.openassetpricing.com/data/)
@@ -111,3 +113,5 @@ model.summary()
 
 # Contact
 
+- Alissia Hrustsova:  alissia.hrustsova@ucdconnect.ie
+- Maximilian Kuttner: maximilian.kuttner@ucdconnect.ie
