@@ -44,6 +44,7 @@ git clone https://github.com/ACM40960/project-mkaywins.git
 - Install all necessary dependencies:
 
     ```bash
+    cd ./project-mkaywins
     pip install -r requirements.txt
     ```
 
@@ -106,4 +107,7 @@ model.summary()
 - We utilize the linear relevance propagation function by [Leila Arras](https://github.com/ArrasL/LRP_for_LSTM) next to our own methods to conduct LRP for LSTM layers.
 
 
+---
+
+# Contact
 
