@@ -11,12 +11,12 @@
 ---
 
 > **Deep Recurrent Factor Model** is a term coined by the authors of the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying
-> Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challenge the idea of linear factor models to predict stock returns and use Long-Short-Term Memory networks (LSTM) in conjunction with layer-wise-relevance propagation (LRP) to construct a time-varying factor model that outperforms linear model, whilst providing insights into the relvance of particular factors in the prediction.
+> Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challenge the idea of linear factor models to predict stock returns and use Long-Short-Term Memory networks (LSTM) in conjunction with layer-wise-relevance propagation (LRP) to construct a time-varying factor model that outperforms equivalent linear models, whilst providing insights into the relvance of particular factors in the prediction.
 
 
 <div align=center>
 This repository provides <b>classes</b>, <b>functions</b> and <b>notebooks</b>
-to test these models on the US-Stock market.
+to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
 </div>
 
 ## Basic Overview
