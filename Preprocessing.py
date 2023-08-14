@@ -39,8 +39,9 @@ def process_data_with_factors(csv_file_path, factor_selection):
     factors_filtered.reset_index(drop="index", inplace=True)
 
     # Download stock data for the SP500 etf SPX
+    print("Download data from yahoo finance ...")
     sp500 = yf.download('^SPX', start=date_range[0], end=date_range[1])
-
+    print("Download: DONE ✔️")
     # Resample to monthly frequency and calculate monthly returns
     sp500 = sp500["Adj Close"].resample('M').last().pct_change().reset_index()
 

@@ -129,14 +129,12 @@ class CustomLSTM(tf.keras.layers.LSTM):
         #print("lstm_lrp_rudder - aggregate: ",aggregate)
         
         if len(rel_prev.shape) == 2 and aggregate:
-            #print("DO AGGREGATE")
+            # print("DO AGGREGATE")
             rel_prev = np.mean(rel_prev, axis=0)
             
         elif len(rel_prev.shape) == 2 and not aggregate:
-            #print("DO NOT AGGREGATE")
+            # print("DO NOT AGGREGATE")
             rel_prev = rel_prev[-1, :]
-            
-        
         
         # initialise relevance
         RyT = rel_prev # (M, )  M...output dim of current layer
@@ -152,7 +150,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
         # Extract the last cell state
         cT = np.array(self.cell_states)[-1, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions, )
 
-        
+
         # Collect relevance scores
         relevance = []
 
@@ -173,9 +171,11 @@ class CustomLSTM(tf.keras.layers.LSTM):
             #print("RyT.shape", RyT.shape)
             #print("Rzt.shape", Rzt.shape)
             
+            # extract the number of nodes in the lower layer - in the case of LSTMS we consider one timestep at a time
+            nlower = input_data.shape[2]
             
             # using linear rule
-            relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rzt, 3))
+            relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rzt, nlower))
         
         
         #print("LRP LSTM - DONE")

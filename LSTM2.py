@@ -2,14 +2,14 @@ import tensorflow as tf
 import numpy as np
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model
-from keras.callbacks import Callback
+from keras.callbacks import Callback, EarlyStopping
 from keras.regularizers import L2
+from keras.engine.input_layer import InputLayer
 from CustomLayers import CustomLSTM
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-import copy
 
 # LRP
 from LRPMethods import lrp_linear
@@ -64,15 +64,23 @@ class CustomModel(tf.keras.Model):
         activation_logger.capture_activations(self, input_data)
 
         Rj = activation_logger.activations[len(self.layers) - 1]["output"][0]
+        
 
         for i in reversed(range(len(self.layers))):
+            # print("i:", i)
+            # print("Rj.shape", Rj.shape)
+            
             current_layer = self.layers[i]
             lower_layer = self.layers[i - 1] if i > 0 else None
 
+            # print("current_layer", current_layer)
+            
             if isinstance(current_layer, Dropout):
                 continue
+            
 
             if isinstance(current_layer, Dense):
+                # print("--------------DENSE--------------")
                 num_nodes_in_lower_layer = activation_logger.activations[i - 1]["output"].shape[1]
 
                 w = current_layer.get_weights()[0]
@@ -88,10 +96,15 @@ class CustomModel(tf.keras.Model):
                 Rj = lrp_linear(w, b, zi, zj, Rj, num_nodes_in_lower_layer)
 
             elif isinstance(current_layer, CustomLSTM):
+                # print("--------------LSTM--------------")
                 if i == 0:
                     Rj = current_layer.lstm_lrp_rudder(input_data, Rj, aggregate)
                 else:
+                    
                     input_tmp = activation_logger.activations[i - 1]["output"]
+                    # print(" GOING INN! ------------------------------")
+                    # print("input_tmp:", input_tmp)
+                    
                     Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
 
         return Rj
@@ -132,13 +145,17 @@ def rolling_fit(input_layer, output_layer,
         model = CustomModel(inputs=input_layer, outputs=output_layer)  # Adjust this with your input and output layers
         model.compile(optimizer='adam', loss='mean_squared_error')
 
+        # Define the EarlyStopping callback
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, mode='min', verbose=0)
+
         # Train the model on the current rolling window
         model.fit(X_train_window,
-                  y_train_window,
-                  validation_data=(X_val, y_val),
-                  epochs=10,
-                  batch_size=32,
-                  verbose=False)
+                y_train_window,
+                validation_data=(X_val, y_val),
+                epochs=10,
+                batch_size=32,
+                verbose=False,
+                callbacks=[early_stopping])
 
         X_next = X_train[end_index:end_index + 1]  # Get the last observation in the validation set
 
@@ -209,7 +226,7 @@ if __name__ == '__main__':
     y_train = np.random.rand(num_samples, 1)
 
     # # Train the model
-    # custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
+    custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
 
 
 
@@ -220,7 +237,7 @@ if __name__ == '__main__':
     input_data = np.random.rand(1, timesteps, input_dim) # sample input
 
 
-    # print(custom_model.backpropagate_relevance(input_data, False))
+    print(custom_model.backpropagate_relevance(input_data, False))
 
 
 
