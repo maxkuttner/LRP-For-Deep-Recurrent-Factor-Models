@@ -20,25 +20,44 @@ This repository provides <b>classes</b>, <b>functions</b> and <b>notebooks</b>
 to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
 </div>
 
+  
+  
 
-# Basic Overview
+---
+
+  
+
+# [Contents](#contents)
+ - [Basic Overview](#basic-overview)
+ - [Getting Started](#getting-started) 
+ - [Dependencies Title](#dependencies-title) 
+    - [Installing Dependencies](#intalling-dependencies)
+    - [Build a model](#build-a-model)
+    - [LRP](#lrp)
+ - [Example](#example)
+ - [Data](#data)
+ - [References](#references)
+ - [Contact](#contact)
+
+
+# [Basic Overview](#basic-overview)
 Welcome to the **Deep Recurrent Factor Model** Repository. This repository introduces a fresh approach to deep feed-forward LSTM networks, featuring a new layer class that enables easy layerwise relevance propagation. 
 
 By building upon the familiar `keras.layers` module, this repository allows you to create deep LSTM networks and fascilitate LRP.
 The key highlight is the `CustomModel` class, which takes care of the complex task of backpropagating relevance through any variation of custom `Input`,`LSTM`, 
 `Dense` or `Dropout` layers, which are built using the `keras` functional API. 
 
-This means you can now design deep feedforward LSTM models and extract feature relevance. Explore this repository to harness enhanced interpretability and customization in your LSTM network designs to produce better and more interpretable return predictions.
+This means you can now design deep feedforward LSTM models and extract feature relevance. We explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation on the US stock market.
 
 
-# Getting Started
+# [Getting Started](#getting-started)
 
 In order to get started clone the GitHub repository to your local machines:
 ```bash
 git clone https://github.com/ACM40960/project-mkaywins.git
 ```
 
-## Intalling Dependencies
+## [Intalling Dependencies](#intalling-dependencies)
 - Make sure to have python 3.11+ installed - if not download the latest version of Python 3 [[here]](https://www.python.org/downloads/).
 
 - Install all necessary dependencies:
@@ -48,7 +67,7 @@ git clone https://github.com/ACM40960/project-mkaywins.git
     pip install -r requirements.txt
     ```
 
-## Build a model
+## [Build a model](#build-a-model)
 
 If you want to build your own deep LSTM model, then you need to 
 use the [Functional API by Keras](https://keras.io/guides/functional_api/). This is shown in the following example:
@@ -86,15 +105,15 @@ model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
 model.summary()
 ```
 
-## LRP
+## [LRP](#lrp)
 
 After having fit the model either by the customary `model.fit()` method or through a rolling fit using `model.rolling_fit()` (for detail see [Example]()).
 
 
-# Example
+# [Example](#example)
 
 - [Replication of Experiments in <i>'Deep Factor Models'</i>](./Notebooks/DeepFactorModels.ipynb)
-# Data
+# [Data](#data)
 
 - We gatherd the factor data from the openly available factor data set provided by [Andrew Y. Chen and Tom Zimmermann](https://www.openassetpricing.com/data/)
 
@@ -102,7 +121,7 @@ After having fit the model either by the customary `model.fit()` method or throu
 
 - How we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the [paper on deep factor models]((https://arxiv.org/pdf/1901.11493.pdf)) is described [[here]](./static/Data/FactorDescription.md).
 
-# References
+# [References](#references)
 
 - The relvance propagation algorithm used is described in <a href=https://proceedings.neurips.cc/paper_files/paper/2019/file/16105fb9cc614fc29e1bda00dab60d41-Paper.pdf> Arjona-Medina, J. A., Gillhofer, M., Widrich, M., Unterthiner, T., Brandstetter, J., & Hochreiter, S. (2019). Rudder: Return decomposition for delayed rewards. Advances in Neural Information Processing Systems, 32.</a>. 
 
@@ -111,7 +130,7 @@ After having fit the model either by the customary `model.fit()` method or throu
 
 ---
 
-# Contact
+# [Contact](#contact)
 
 - Alissia Hrustsova:  alissia.hrustsova@ucdconnect.ie
 - Maximilian Kuttner: maximilian.kuttner@ucdconnect.ie
