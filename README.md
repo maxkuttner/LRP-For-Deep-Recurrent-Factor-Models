@@ -30,7 +30,6 @@ to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
 # [Contents](#contents)
  - [Basic Overview](#basic-overview)
  - [Getting Started](#getting-started) 
- - [Dependencies Title](#dependencies-title) 
     - [Installing Dependencies](#intalling-dependencies)
     - [Build a model](#build-a-model)
     - [LRP](#lrp)
