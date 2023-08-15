@@ -1,9 +1,10 @@
-<p align="center"><img width=% src="./static/logo.png" style="margin-bottom=0px"></p>
+<p align="center"><img width=% src="./static/images/readme/Logo.png" style="margin-bottom=0px"></p>
 <div align="center">
 
 ![Static Badge](https://img.shields.io/badge/Python-3.11-green?style=flat-square&logo=python&logoColor=%23fff)
 ![Static Badge](https://img.shields.io/badge/Jupyter-1.0-green?style=flat-square&logo=jupyter&logoColor=%23fff)
 ![Static Badge](https://img.shields.io/badge/Tensorflow-2.13.0-orange?style=flat-square&logo=tensorflow&logoColor=%23fff)
+![Static Badge](https://img.shields.io/badge/Keras-2.13.1-red?style=flat-square&logo=keras&logoColor=%23fff)
 [![License](https://img.shields.io/badge/license-MIT-red?style=flat-square)](./License)
 
 </div>
@@ -31,7 +32,7 @@ to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
  - [Basic Overview](#basic-overview)
  - [Getting Started](#getting-started) 
     - [Installing Dependencies](#intalling-dependencies)
-    - [Build a model](#build-a-model)
+    - [Building a Model](#build-a-model)
     - [LRP](#lrp)
  - [Example](#example)
  - [Data](#data)
@@ -44,9 +45,9 @@ Welcome to the **Deep Recurrent Factor Model** Repository. This repository intro
 
 By building upon the familiar `keras.layers` module, this repository allows you to create deep LSTM networks and fascilitate LRP.
 The key highlight is the `CustomModel` class, which takes care of the complex task of backpropagating relevance through any variation of custom `Input`,`LSTM`, 
-`Dense` or `Dropout` layers, which are built using the `keras` functional API. 
+`Dense` or `Dropout` layers, which are built using the [Functional API by Keras](https://keras.io/guides/functional_api/). 
 
-This means you can now design deep feedforward LSTM models and extract feature relevance. We explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation on the US stock market.
+ In an [Example](#example) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation on the US stock market.
 
 
 # [Getting Started](#getting-started)
@@ -57,7 +58,7 @@ git clone https://github.com/ACM40960/project-mkaywins.git
 ```
 
 ## [Intalling Dependencies](#intalling-dependencies)
-- Make sure to have python 3.11+ installed - if not download the  [latest version of Python 3](https://www.python.org/downloads/).
+- Make sure to have python 3.11+ installed - if not, download the  [latest version of Python 3](https://www.python.org/downloads/).
 
 - Install all necessary dependencies:
 
@@ -66,7 +67,7 @@ git clone https://github.com/ACM40960/project-mkaywins.git
     pip install -r requirements.txt
     ```
 
-## [Build a model](#build-a-model)
+## [Building a Model](#build-a-model)
 
 If you want to build your own deep LSTM model, then you need to 
 use the [Functional API by Keras](https://keras.io/guides/functional_api/). This is shown in the following example:
@@ -119,7 +120,30 @@ custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
 
 ## [Layerwise Relevance Propagation (LRP)](#lrp)
 
+To backpropagate relevance from either Dense to Dense, LSTM to Dense or Dense to LSTM, we use the approach suggested by [Arras et al. (2017)](https://arxiv.org/abs/1706.07206), namely 
+$$
+R_{i\leftarrow j} = \frac{z_i \cdot w_{ij} + \frac{\epsilon \cdot \text{sign}(z_j) + \delta \cdot b_j }{N}}{z_j + \epsilon \cdot \text{sign}(z_j)} \cdot R_j,
+$$
+where 
+- $R_j$ represents the relvance of nodes in upper layers, 
+- $z_i$ is the activation of nodes in the lower layer
+- $z_j$ is the activtion of nodes in the upper layer
+- $w_{ij}$ are the weights connecting nodes from lower and upper layers
+- $\epsilon$ is a small number to avoid division by 0 - it is usually set to 0.001
+- δ is a multiplicative factor that is either 1 or 0 (see [details](https://arxiv.org/abs/1706.07206))
+
+Here is an illustration of how the relevance is backpropagted in the network.
+
 ![](./static/images/readme/linearerem-1.jpg)
+
+
+For the backpropagation of relevance in a LSTM cell we provide two approaches:
+
+1. the approach suggested by [Arras et al. (2019)](https://arxiv.org/pdf/1909.12114.pdf), which discountes the relevance scores by the forget factor of the LSTM cell at each point in time.
+
+2. the approach suggested by [Arjona-Medina, et al. (2019) - A8.4.2](https://arxiv.org/pdf/1806.07857.pdf), who make a list of assumptions on the LSTM cell archticeture and characteristics themselves to facilitate relevance propagation without disounting relevance scores through the forget factor of the LSTM cell
+
+Both approaches use the "signal takes it all" approach to dealing with distribution of relevance in multiplicative connections within the LSTM cell (refer to the paper for [details](https://arxiv.org/pdf/1909.12114.pdf)). Here is an illustration of how the relevance is backpropagated through each LSTM cell.
 
 ![](./static/images/readme/lstmlrp-2.jpg)
 
@@ -128,43 +152,23 @@ After having fit the model either by the customary `model.fit()` method, we can 
 
 
 ```python
-# After training, capture activations using the callback
+# Create sample input data to test LRP
+
 batch_size = 1  # Number of samples in a batch
 timesteps = 5  # Number of time steps
 input_dim = 16  # Dimensionality of each input
+
 input_data = np.random.rand(1, timesteps, input_dim) # sample input
 
+# Relevance for each input feature based on the provided input data
+print(custom_model.backpropagate_relevance(input_data))
 
-print(custom_model.backpropagate_relevance(input_data, False))
-
-#>> [[ 7.09338023e-02  1.13306827e-01  4.60653321e-02 -1.32853039e-04
-#>>   -1.35259608e-01  8.42626119e-04  8.51461191e-02  2.14990067e-02
-#>>    8.02944509e-02  2.89641364e-02  3.84779541e-02 -2.81626266e-02
-#>>    1.97666840e-02  4.25549791e-02  4.48795180e-02 -5.27667826e-03]
-#>>  [ 2.54032453e-02  1.86068629e-02  6.91068800e-02 -2.39760123e-03
-#>>   -1.79765880e-01  6.25969146e-04  1.74778275e-01  1.06237872e-01
-#>>    2.17789945e-01  8.48741972e-02  6.93455854e-02 -1.47983451e-02
-#>>    2.01158930e-03  4.01856118e-02  1.46082137e-02 -1.32700473e-02]
-#>>  [ 1.03305922e-01  1.57469997e-02  4.28371149e-02 -2.59550590e-03
-#>>   -1.04792334e-01 -4.62834848e-04  1.36156610e-01  1.08341661e-01
-#>>    6.64839048e-02  2.61730689e-02  1.33216296e-01 -2.02558013e-02
-#>>    3.66131254e-04  2.98548716e-02  6.76710617e-02 -2.87605669e-02]
-#>>  [ 7.00535927e-02  1.08678642e-01  1.83934577e-02 -3.58809669e-03
-#>>   -1.83508667e-01  2.84736138e-02  1.32978661e-01  2.21583850e-02
-#>>    8.78448212e-02  1.44823108e-02  5.51481198e-02 -3.78624253e-03
-#>>    1.50802589e-03  4.10771157e-04  1.67296142e-02 -2.33838079e-02]
-#>>  [ 1.32499796e-01  1.38007175e-01  5.90701240e-02  2.62207972e-03
-#>>   -3.57363168e-02  1.00417424e-02  2.96777620e-02  7.84326535e-02
-#>>    1.12826649e-01  5.46357997e-02  1.93561124e-01 -1.51615638e-02
-#>>    1.48435432e-02  3.67880910e-02  3.77769256e-02 -3.78735269e-02]]
 ```
 
 To summarise the relevance across the `timesteps`, we take the average for each input factor across time.
 
 ```python
 relevance_aggregated = np.mean(np.array(relevance), axis=1)
-
-#>>  array([0.02649373, 0.0383339 , 0.03583041, 0.02141208, 0.05075075])
 ```
 
 # [Example](#example)
@@ -179,10 +183,6 @@ relevance_aggregated = np.mean(np.array(relevance), axis=1)
 - How we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the [paper on deep factor models]((https://arxiv.org/pdf/1901.11493.pdf)) is described [[here]](./static/Data/FactorDescription.md).
 
 # [References](#references)
-
-- The relvance propagation algorithm used is described in <a href=https://proceedings.neurips.cc/paper_files/paper/2019/file/16105fb9cc614fc29e1bda00dab60d41-Paper.pdf> Arjona-Medina, J. A., Gillhofer, M., Widrich, M., Unterthiner, T., Brandstetter, J., & Hochreiter, S. (2019). Rudder: Return decomposition for delayed rewards. Advances in Neural Information Processing Systems, 32.</a>. 
-
-- We utilize the linear relevance propagation function by [Leila Arras](https://github.com/ArrasL/LRP_for_LSTM) next to our own methods to conduct LRP for LSTM layers.
 
 
 ---
