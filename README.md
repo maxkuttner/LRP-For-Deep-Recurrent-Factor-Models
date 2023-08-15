@@ -178,7 +178,7 @@ custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 
 -  You can find a description of the factor data [here](https://docs.google.com/spreadsheets/d/1WLiuWh4Uq_0wK230yXpczsb_PON0z91e_TAcUtb0rkU/edit?pli=1#gid=312865186)
 
-- How we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the [paper on deep factor models]((https://arxiv.org/pdf/1901.11493.pdf)) is described [here](./static/Data/FactorDescription.md).
+- We describe how we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the paper on [deep recurrent factor models]((https://arxiv.org/pdf/1901.11493.pdf)) in [here](./static/Data/FactorDescription.md).
 
 # [References](#references)
 
