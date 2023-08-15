@@ -17,7 +17,7 @@ Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challeng
 
 <div align=center>
 This repository provides <b>classes</b>, <b>functions</b> and <b>notebooks</b>
-to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
+to test <b>Deep Recurrent Factor Models</b> on the US-stock market.
 </div>
 
 ---
@@ -44,7 +44,7 @@ By building upon familiar modules like `Keras` and `Tensorflow`, this repository
 The provided classes and methods take care of the complex task of backpropagating relevance through any variation of custom `Input`, `LSTM`, 
 `Dense` or `Dropout` layers. This means you can build deep feed-forward LSTM networks and effortlessly backpropagate  relvance scores for predictions. The model builds on top of the [Functional API by Keras](https://keras.io/guides/functional_api/) to provide compatability with various functionalities that come with `Keras` and `Tensorflow`. 
 
- In an [Example](#example) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation of custom LSTM model with LRP on the US stock market.
+ In an [Example](#example) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation of customs LSTM models with LRP on the US-stock market.
 
 
 # [Getting Started](#getting-started)
@@ -150,7 +150,7 @@ Both approaches use the "signal takes it all" approach to dealing with distribut
 
 ![](./static/images/readme/lstmlrp-2.jpg)
 
-After having fit the model either by the customary `model.fit()` method, we can proceed to compute the relevance for each input feature. Note, as the input to the model was of dimensions `(timesteps, input_dim) = (5, 16)`, the relevance will have the same dimensions.
+After fitting the model we can proceed to compute the relevance for each input feature. Note, as the input to the model is of dimensions `(timesteps, input_dim) = (5, 16)`, the resulting relevance scores will have the same dimensions.
 
 
 
@@ -180,7 +180,18 @@ custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 
 # [Example](#example)
 
+We provide an example of the classes and methods provided in this repository and 
+test our implementation on the US-stock market.
+Please refer to the following notebook for the analysis and results: 
 - [Replication of Experiments in <i>'Deep Factor Models'</i>](./Notebooks/DeepFactorModels.ipynb)
+
+
+You launch the notebook directly in your browser using binder 
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ACM40960/DeepRecurrentFactorModels/main?labpath=Notebooks%2FDeepFactorModels.ipynb)
+
+You can find the literature review for this analysis [here](./static/Files/LiteratureReview.pdf)
+
 # [Data](#data)
 
 - We gatherd the factor data from the openly available factor data set provided by [Andrew Y. Chen and Tom Zimmermann](https://www.openassetpricing.com/data/)
