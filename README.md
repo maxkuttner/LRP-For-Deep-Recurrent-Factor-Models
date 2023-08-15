@@ -9,10 +9,9 @@
 
 </div>
 
----
 
 > **Deep Recurrent Factor Model** is a term coined by the authors of the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying
-> Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challenge the idea of linear factor models to predict stock returns and use Long-Short-Term Memory networks (LSTM) in conjunction with layer-wise-relevance propagation (LRP) to construct a time-varying factor model that outperforms equivalent linear models, whilst providing insights into the relvance of particular factors in the prediction.
+Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challenge the idea of linear factor models to predict stock returns and use Long-Short-Term Memory networks (LSTM) in conjunction with layer-wise-relevance propagation (LRP) to construct a time-varying factor model that outperforms equivalent linear models, whilst providing insights into the relvance of particular factors in the prediction.
 
 
 
@@ -20,9 +19,6 @@
 This repository provides <b>classes</b>, <b>functions</b> and <b>notebooks</b>
 to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
 </div>
-
-  
-  
 
 ---
 
@@ -155,23 +151,23 @@ After having fit the model either by the customary `model.fit()` method, we can 
 
 ```python
 # Create sample input data to test LRP
-
-batch_size = 1  # Number of samples in a batch
-timesteps = 5  # Number of time steps
-input_dim = 16  # Dimensionality of each input
-
 input_data = np.random.rand(1, timesteps, input_dim) # sample input
 
-# Relevance for each input feature based on the provided input data
-print(custom_model.backpropagate_relevance(input_data))
-
+# Copmute LRP for entire network
+custom_model.backpropagate_relevance(input_data, type="arras") # Arras et al. (2019)
+custom_model.backpropagate_relevance(input_data, type="rudder") # Arjona-Medina, et al. (2019)
 ```
 
-To summarise the relevance across the `timesteps`, we take the average for each input factor across time.
+One can also decide on whether to aggregate relevance scores for `LSTM` layers with 
+`return_sequences = True`. The scores will be of dimensions `(timesteps, units)`,
+and one can aggregate the relevance scores before propagating them to the next lower layer, by taking taking the last relevance scores or taking the average across all 
+`timesteps`.
 
 ```python
-relevance_aggregated = np.mean(np.array(relevance), axis=1)
+custom_model.backpropagate_relevance(input_data, aggregate=False, type="arras") 
+custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 ```
+
 
 # [Example](#example)
 
@@ -180,11 +176,13 @@ relevance_aggregated = np.mean(np.array(relevance), axis=1)
 
 - We gatherd the factor data from the openly available factor data set provided by [Andrew Y. Chen and Tom Zimmermann](https://www.openassetpricing.com/data/)
 
--  You can find a description of the factor data [[here]](https://docs.google.com/spreadsheets/d/1WLiuWh4Uq_0wK230yXpczsb_PON0z91e_TAcUtb0rkU/edit?pli=1#gid=312865186)
+-  You can find a description of the factor data [here](https://docs.google.com/spreadsheets/d/1WLiuWh4Uq_0wK230yXpczsb_PON0z91e_TAcUtb0rkU/edit?pli=1#gid=312865186)
 
-- How we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the [paper on deep factor models]((https://arxiv.org/pdf/1901.11493.pdf)) is described [[here]](./static/Data/FactorDescription.md).
+- How we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the [paper on deep factor models]((https://arxiv.org/pdf/1901.11493.pdf)) is described [here](./static/Data/FactorDescription.md).
 
 # [References](#references)
+
+
 
 
 ---

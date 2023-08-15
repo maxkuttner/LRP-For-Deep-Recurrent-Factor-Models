@@ -103,6 +103,63 @@ class CustomLSTM(tf.keras.layers.LSTM):
             self.cell_input_signal.append( np.array(cell_input_signal) ) # (time_steps, batch_size, dimensions )
             self.cell_state_signal.append( np.array(cell_state_signal) ) # (time_steps, batch_size, dimensions )
 
+    def lstm_lrp_arras(self, input_data, rel_prev, aggregate=True):
+        
+        # compute all activations (gates and signals for lstm layer)
+        self.get_lstm_states(input_data)
+
+        if len(rel_prev.shape) == 2 and aggregate:
+            # print("DO AGGREGATE")
+            rel_prev = np.mean(rel_prev, axis=0)
+            
+        elif len(rel_prev.shape) == 2 and not aggregate:
+            # print("DO NOT AGGREGATE")
+            rel_prev = rel_prev[-1, :]
+
+        
+        # Extract the last cell state
+        cT = np.array(self.cell_states)[-1, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions, )
+
+        # Relevance for the final step -> Leila Arras et al. (2019) in the book Explainable AI (Chpt. 11) write:
+        # ck is a constant term that is used to redistrubte the relevance across time - 
+        # we will take the previous relevance from the layer above and set ck equal to this value  
+        ck = rel_prev
+
+
+        relevance = []
+        
+        nlower = input_data.shape[2]
+        
+        # Get the LSTM weights and biases
+        W = self.get_weights()[0]  # LSTM weights (D, 4M) - 4 because of 4 gates
+        w_i, w_f, w_c, w_o = tf.split(W, num_or_size_splits=4, axis=1) # (D,M), (D,M), (D,M), (D,M)
+        
+        # Get the LSTM weights and biases
+        b = self.get_weights()[2]  # Biases (4M,)
+        b_i, b_f, b_c, b_o = tf.split(b, num_or_size_splits=4, axis=0) # (M,), (M,), (M,), (M,)
+        
+        
+        for t in reversed(range(self.timesteps)): 
+            zt = np.array(self.cell_input_signal)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+            it = np.array(self.input_gate_activation)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+            
+            # compute product between input signal and input gate
+            ap = zt * it
+            
+            
+            if(t == self.timesteps - 1):
+                # Rp = ak * ck
+                Rp = ap * ck 
+            else:
+                # R_p-T = ( prod_{t=1}^T a_{f-t+1} ) * a_{p-T} * c_k , where c_k = cT
+                Rp = ap * np.multiply.reduce(np.array(self.forget_gate_activation)[t:, 0, :]) * ck 
+            
+            # using linear rule
+            relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rp, nlower))
+        
+        return np.array(relevance)
+
+
     def lstm_lrp_rudder(self, input_data, rel_prev, aggregate=True):
         """_summary_
 

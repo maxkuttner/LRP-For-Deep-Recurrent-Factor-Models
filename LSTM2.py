@@ -4,7 +4,6 @@ from keras.layers import Input, Dense, Dropout
 from keras.models import Model
 from keras.callbacks import Callback, EarlyStopping
 from keras.regularizers import L2
-from keras.engine.input_layer import InputLayer
 from CustomLayers import CustomLSTM
 import os
 from tqdm import tqdm
@@ -43,69 +42,77 @@ class ActivationLogger(Callback):
 # Override the layers property to include the intermediate outputs
 class CustomModel(tf.keras.Model):
     def __init__(self, inputs, outputs):
+        
+        # constructor of tf.keras.Model class
         super().__init__(inputs, outputs)
     
     @property
     def layers(self):
+        # exclude Dropout from the list of layers - makes it easier to do LRP
         return [layer for layer in super().layers if not isinstance(layer, Dropout)]
-    
-    def reinitialize(self):
-        for l in self.layers:
-            if hasattr(l,"kernel_initializer"):
-                l.kernel.assign(l.kernel_initializer(tf.shape(l.kernel)))
-            if hasattr(l,"bias_initializer"):
-                l.bias.assign(l.bias_initializer(tf.shape(l.bias)))
-            if hasattr(l,"recurrent_initializer"):
-                l.recurrent_kernel.assign(l.recurrent_initializer(tf.shape(l.recurrent_kernel)))
 
-    def backpropagate_relevance(self, input_data, aggregate):
+    def backpropagate_relevance(self, input_data, aggregate, type="arras"):
         
+        # log activations of network
         activation_logger = ActivationLogger()
         activation_logger.capture_activations(self, input_data)
 
+        # initialise relevance score Rj with the activation of the final output
         Rj = activation_logger.activations[len(self.layers) - 1]["output"][0]
         
-
+        # iterate over the layers of the network in reversed order
         for i in reversed(range(len(self.layers))):
-            # print("i:", i)
-            # print("Rj.shape", Rj.shape)
-            
-            current_layer = self.layers[i]
-            lower_layer = self.layers[i - 1] if i > 0 else None
 
-            # print("current_layer", current_layer)
-            
+            # get current layer
+            current_layer = self.layers[i]
+
+            # skip drouput layer
             if isinstance(current_layer, Dropout):
                 continue
             
-
+            # handle: Dense layer
             if isinstance(current_layer, Dense):
-                # print("--------------DENSE--------------")
-                num_nodes_in_lower_layer = activation_logger.activations[i - 1]["output"].shape[1]
+                
+                # get the number of nodes in the lower layer as this number is used in the lrp rule
+                nlower = activation_logger.activations[i - 1]["output"].shape[1]
 
+                # get weights and biases of current layer
                 w = current_layer.get_weights()[0]
                 b = current_layer.get_weights()[1]
 
+                # check if last layer
                 if i == len(self.layers) - 1:
+                    # if last layer, then use activation/Rj as nodes for the higher layer
                     zj = Rj
                 else:
+                    # else use the output of the current layer as nodes for the higher layer
                     zj = activation_logger.activations[i]["output"][0, :]
 
+                # get activation from lower layer
                 zi = activation_logger.activations[i - 1]["output"][0, :]
 
-                Rj = lrp_linear(w, b, zi, zj, Rj, num_nodes_in_lower_layer)
+                # user linear lrp rule
+                Rj = lrp_linear(w, b, zi, zj, Rj, nlower)
 
+            # hanlde: Custom LSTM layer
             elif isinstance(current_layer, CustomLSTM):
-                # print("--------------LSTM--------------")
+                
                 if i == 0:
-                    Rj = current_layer.lstm_lrp_rudder(input_data, Rj, aggregate)
+                    # choose type of LRP rule
+                    if type == "arras":
+                        Rj = current_layer.lstm_lrp_arras(input_data, Rj, aggregate)
+                    else:
+                        Rj = current_layer.lstm_lrp_rudder(input_data, Rj, aggregate)
                 else:
                     
+                    # get input from end of previous layer
                     input_tmp = activation_logger.activations[i - 1]["output"]
-                    # print(" GOING INN! ------------------------------")
-                    # print("input_tmp:", input_tmp)
                     
-                    Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
+                    # choose type of LRP rule
+                    if type == "arras":
+                        Rj = current_layer.lstm_lrp_arras(input_tmp, Rj, aggregate)
+                    else:
+                        Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
 
         return Rj
 
@@ -189,6 +196,8 @@ def rolling_fit(input_layer, output_layer,
 
 
 if __name__ == '__main__':
+    #Testing
+    
     # ----------------------------- MODEL CONSTRUCTION ----------------------------------
     timesteps = 5
     input_dim = 16
