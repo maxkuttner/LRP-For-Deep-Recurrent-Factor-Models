@@ -121,9 +121,11 @@ custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
 ## [Layerwise Relevance Propagation (LRP)](#lrp)
 
 To backpropagate relevance from either Dense to Dense, LSTM to Dense or Dense to LSTM, we use the approach suggested by [Arras et al. (2017)](https://arxiv.org/abs/1706.07206), namely 
-$$
+
+```math
 R_{i\leftarrow j} = \frac{z_i \cdot w_{ij} + \frac{\epsilon \cdot \text{sign}(z_j) + \delta \cdot b_j }{N}}{z_j + \epsilon \cdot \text{sign}(z_j)} \cdot R_j,
-$$
+```
+
 where 
 - $R_j$ represents the relvance of nodes in upper layers, 
 - $z_i$ is the activation of nodes in the lower layer
@@ -139,9 +141,9 @@ Here is an illustration of how the relevance is backpropagted in the network.
 
 For the backpropagation of relevance in a LSTM cell we provide two approaches:
 
-1. the approach suggested by [Arras et al. (2019)](https://arxiv.org/pdf/1909.12114.pdf), which discountes the relevance scores by the forget factor of the LSTM cell at each point in time.
+1. the approach suggested by [Arras et al. (2019)](https://arxiv.org/pdf/1909.12114.pdf), which discountes the relevance scores by 'forget factors' of the LSTM cell at each point in time.
 
-2. the approach suggested by [Arjona-Medina, et al. (2019) - A8.4.2](https://arxiv.org/pdf/1806.07857.pdf), who make a list of assumptions on the LSTM cell archticeture and characteristics themselves to facilitate relevance propagation without disounting relevance scores through the forget factor of the LSTM cell
+2. the approach suggested by [Arjona-Medina, et al. (2019) - A8.4.2](https://arxiv.org/pdf/1806.07857.pdf), who make a list of assumptions on the LSTM cell archticeture and characteristics themselves to facilitate relevance propagation without disounting relevance scores through 'forget factors' of the LSTM cell
 
 Both approaches use the "signal takes it all" approach to dealing with distribution of relevance in multiplicative connections within the LSTM cell (refer to the paper for [details](https://arxiv.org/pdf/1909.12114.pdf)). Here is an illustration of how the relevance is backpropagated through each LSTM cell.
 
