@@ -1,11 +1,11 @@
 <p align="center"><img width=% src="./static/images/readme/Logo.png" style="margin-bottom=0px"></p>
 <div align="center">
 
-![Static Badge](https://img.shields.io/badge/Python-3.11-green?style=flat-square&logo=python&logoColor=%23fff)
-![Static Badge](https://img.shields.io/badge/Jupyter-1.0-green?style=flat-square&logo=jupyter&logoColor=%23fff)
-![Static Badge](https://img.shields.io/badge/Tensorflow-2.13.0-orange?style=flat-square&logo=tensorflow&logoColor=%23fff)
-![Static Badge](https://img.shields.io/badge/Keras-2.13.1-red?style=flat-square&logo=keras&logoColor=%23fff)
-[![License](https://img.shields.io/badge/license-MIT-red?style=flat-square)](./License)
+![Static Badge](https://img.shields.io/badge/Python-3.11-green?style=round&logo=python&logoColor=%23fff)
+![Static Badge](https://img.shields.io/badge/Jupyter-1.0-green?style=round&logo=jupyter&logoColor=%23fff)
+![Static Badge](https://img.shields.io/badge/Tensorflow-2.13.0-orange?style=round&logo=tensorflow&logoColor=%23fff)
+![Static Badge](https://img.shields.io/badge/Keras-2.13.1-red?style=round&logo=keras&logoColor=%23fff)
+[![License](https://img.shields.io/badge/license-MIT-red?style=round)](./License)
 
 </div>
 
@@ -183,14 +183,17 @@ custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 We provide an example of the classes and methods provided in this repository and 
 test our implementation on the US-stock market.
 Please refer to the following notebook for the analysis and results: 
+
+
 - [Replication of Experiments in <i>'Deep Factor Models'</i>](./Notebooks/DeepFactorModels.ipynb)
 
 
-You launch the notebook directly in your browser using binder 
+You launch the notebook directly in your browser using binder:
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ACM40960/DeepRecurrentFactorModels/main?labpath=Notebooks%2FDeepFactorModels.ipynb)
 
-You can find the literature review for this analysis [here](./static/Files/LiteratureReview.pdf)
+You can find the literature review for this analysis [here](./static/Files/LiteratureReview.pdf).
+
 
 # [Data](#data)
 
