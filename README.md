@@ -37,13 +37,14 @@ to test <b>Deep Recurrent Factor Models</b> on the US-Stock market.
 
 
 # [Basic Overview](#basic-overview)
-Welcome to the **Deep Recurrent Factor Model** Repository. This repository introduces a fresh approach to deep feed-forward LSTM networks, featuring a new layer class that enables easy layerwise relevance propagation. 
+Welcome to the **Deep Recurrent Factor Model + LRP** Repository. 
+By building upon familiar modules like `Keras` and `Tensorflow`, this repository allows you to create deep LSTM networks and fascilitate LRP through the provided classes and methods.
 
-By building upon the familiar `keras.layers` module, this repository allows you to create deep LSTM networks and fascilitate LRP.
-The key highlight is the `CustomModel` class, which takes care of the complex task of backpropagating relevance through any variation of custom `Input`,`LSTM`, 
-`Dense` or `Dropout` layers, which are built using the [Functional API by Keras](https://keras.io/guides/functional_api/). 
 
- In an [Example](#example) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation on the US stock market.
+The provided classes and methods take care of the complex task of backpropagating relevance through any variation of custom `Input`, `LSTM`, 
+`Dense` or `Dropout` layers. This means you can build deep feed-forward LSTM networks and effortlessly backpropagate  relvance scores for predictions. The model builds on top of the [Functional API by Keras](https://keras.io/guides/functional_api/) to provide compatability with various functionalities that come with `Keras` and `Tensorflow`. 
+
+ In an [Example](#example) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation of custom LSTM model with LRP on the US stock market.
 
 
 # [Getting Started](#getting-started)
@@ -66,7 +67,10 @@ git clone https://github.com/ACM40960/project-mkaywins.git
 ## [Building a Model](#build-a-model)
 
 If you want to build your own deep LSTM model, then you need to 
-use the [Functional API by Keras](https://keras.io/guides/functional_api/). This is shown in the following example:
+use the [Functional API by Keras](https://keras.io/guides/functional_api/) in cunjunction with the provided LSTM layer `CustomLSTM` and the provided model class `CustomModel`.
+
+
+We provide an exmaple on how to build such a model:
 
 ```python
 # Build an example model
@@ -74,6 +78,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Define input dimensions
 timesteps = 5
 input_dim = 16
 input_shape = (timesteps, input_dim)
@@ -82,7 +87,7 @@ input_shape = (timesteps, input_dim)
 input_layer = Input(shape=input_shape, name="Input")
 
 #2) Create a CustomLSTM layer
-lstm_output, hidden_state, cell_state = CustomLSTM(units=32, return_sequences=False,
+lstm_output, hidden_state, cell_state = CustomLSTM(units=16, return_sequences=False,
                                                 return_state=True,
                                                 kernel_regularizer=L2(0.02),
                                                 name="CustomLSTM_1")(input_layer)
@@ -164,7 +169,11 @@ and one can aggregate the relevance scores before propagating them to the next l
 `timesteps`.
 
 ```python
+
+# aggregate relvance across time - use the most recent input to the layer for relvance 
 custom_model.backpropagate_relevance(input_data, aggregate=False, type="arras") 
+
+# aggregate relvance across time - average relevance of features across time
 custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 ```
 
@@ -183,11 +192,20 @@ custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 # [References](#references)
 
 
+- Arjona-Medina, J. A., Gillhofer, M., Widrich, M., Unterthiner, T., Brandstetter, J., & Hochreiter, S. (2019). Rudder: Return decomposition for delayed rewards. Advances in Neural Information Processing Systems, 32.
 
+- Arras, L., Montavon, G., Müller, K. R., & Samek, W. (2017). Explaining recurrent neural network predictions in sentiment analysis. arXiv preprint arXiv:1706.07206.
+
+- Arras, L., Arjona-Medina, J., Widrich, M., Montavon, G., Gillhofer, M., Müller, K. R., ... & Samek, W. (2019). Explaining and interpreting LSTMs. Explainable ai: Interpreting, explaining and visualizing deep learning, 211-238.
+
+- Chen, A. Y., & Zimmermann, T. (2021). Open source cross-sectional asset pricing. Critical Finance Review, Forthcoming.
+
+- Nakagawa, K., Ito, T., Abe, M., & Izumi, K. (2019). Deep recurrent factor model: interpretable non-linear and time-varying multi-factor model. arXiv preprint arXiv:1901.11493.
 
 ---
 
 # [Contact](#contact)
 
-- Alissia Hrustsova:  alissia.hrustsova@ucdconnect.ie
 - Maximilian Kuttner: maximilian.kuttner@ucdconnect.ie
+- Alissia Hrustsova:  alissia.hrustsova@ucdconnect.ie
+
