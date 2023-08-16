@@ -148,7 +148,7 @@ Here is an illustration of how the relevance is backpropagted in the network. Th
 ![](./static/images/readme/linearerem-1.jpg)
 
 
-The propagation of relevance through a LSTM cell is not straight forward as there a multiple components 
+The propagation of relevance through a LSTM cell is not straight-forward as there a multiple components 
 envolved in a single LSTM cell that interact with each other (signals, gates, etc.) to feed the provided 
 input through the system. Thus, we cannot simple use the 'linear' backpropagation rule from above.
 
@@ -175,15 +175,17 @@ input_data = np.random.rand(1, timesteps, input_dim) # sample input
 custom_model.backpropagate_relevance(input_data, type="arras") # Arras et al. (2019)
 custom_model.backpropagate_relevance(input_data, type="rudder") # Arjona-Medina, et al. (2019)
 ```
- Note, as the input to the model is of dimensions `(timesteps, input_dim) = (5, 16)`, the resulting relevance scores will have the same dimensions.
-One can decide on whether to aggregate relevance scores for `LSTM` layers. 
-One can aggregate the relevance scores before propagating them to the next lower layer, 
-by means of the `aggregate` argument. 
+As the input to the model is of dimensions `(timesteps, input_dim) = (5, 16)`, the resulting relevance scores will have the same dimensions.
 
-- `aggregate = True`:  the average across all `timesteps` is propagated to the next layer
-- `aggregate = False`: the relevance score corresponding to the most recent input is propagated to the next layer
 
-Note: This rule is only relevant if you use `CustomLSTM` layer with the argument `return_sequences` set to `True`.
+> One can decide on whether to aggregate relevance scores for `LSTM` layers. 
+> One can aggregate the relevance scores before propagating them to the next lower layer, 
+> by means of the `aggregate` argument. 
+> - `aggregate = True:   ` the average across all `timesteps` is propagated to the next layer
+> - `aggregate = False:   ` the relevance score corresponding to the most recent input is
+> propagated to the next layer
+>
+> Note: This rule is only relevant if you use `CustomLSTM` layer with the argument `return_sequences` set to `True`.
 
 ```python
 # aggregate relvance across time - use the most recent input to the layer for relvance 
