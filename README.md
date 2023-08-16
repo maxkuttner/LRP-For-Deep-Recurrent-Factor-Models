@@ -51,7 +51,7 @@ The provided classes and methods take care of the complex task of backpropagatin
 
 In order to get started clone the GitHub repository to your local machines:
 ```bash
-git clone https://github.com/ACM40960/project-mkaywins.git
+git clone https://github.com/ACM40960/DeepRecurrentFactorModels
 ```
 
 ## [Installing Dependencies 🛠️](#intalling-dependencies)
