@@ -45,7 +45,7 @@ By building upon familiar modules like `Keras` and `Tensorflow`, this repository
 The provided classes and methods take care of the complex task of backpropagating relevance through any variation of custom `Input`, `LSTM`, 
 `Dense` or `Dropout` layers. This means you can build deep feed-forward LSTM networks and effortlessly backpropagate  relvance scores for predictions. The model builds on top of the [Functional API by Keras](https://keras.io/guides/functional_api/) to provide compatability with various functionalities that come with `Keras` and `Tensorflow`. 
 
- In an [Example](#example) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation of customs LSTM models with LRP on the US-stock market.
+ In an [Example](#example-) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation of customs LSTM models with LRP on the US-stock market.
 
 
 # [Getting Started 🚀](#getting-started)
