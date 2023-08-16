@@ -25,12 +25,12 @@ to test <b>Deep Recurrent Factor Models</b> on the US-stock market.
   
 
 # [Contents](#contents)
-- [Contents](#contents)
+
 - [Basic Overview 📄](#basic-overview-)
 - [Getting Started 🚀](#getting-started-)
   - [Installing Dependencies 🛠️](#installing-dependencies-️)
   - [Building a Model 🏗️](#building-a-model-️)
-  - [Layerwise Relevance Propagation (LRP) 🔍](#layerwise-relevance-propagation-lrp-)
+  - [Layerwise Relevance Propagation (LRP) 🔍](#lrp)
 - [Example 🌟](#example-)
   - [Data 📊](#data-)
 - [References 📚](#references-)
