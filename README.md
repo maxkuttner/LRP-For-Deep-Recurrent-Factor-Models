@@ -11,7 +11,7 @@
 
 
 > **Deep Recurrent Factor Model** is a term coined by the authors of the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying
-Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challenge the idea of linear factor models to predict stock returns and use Long-Short-Term Memory networks (LSTM) in conjunction with layer-wise-relevance propagation (LRP) to construct a time-varying factor model that outperforms equivalent linear models, whilst providing insights into the relvance of particular factors in the prediction.
+>Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf). The authors challenge the idea of linear factor models to predict stock returns and use Long-Short-Term Memory networks (LSTM) in conjunction with layer-wise-relevance propagation (LRP) to construct a time-varying factor model that outperforms equivalent linear models, whilst providing insights into the relvance of particular factors in the prediction.
 
 
 
@@ -25,15 +25,16 @@ to test <b>Deep Recurrent Factor Models</b> on the US-stock market.
   
 
 # [Contents](#contents)
- - [Basic Overview 📄](#basic-overview)
- - [Getting Started 🚀](#getting-started) 
-    - [Installing Dependencies 🛠️](#intalling-dependencies)
-    - [Building a Model 🏗️](#build-a-model)
-    - [Layerwise Relevance Propagation (LRP) 🔍](#lrp)
- - [Example 🌟](#example)
-    - [Data 📊](#data)
- - [References 📚](#references)
- - [Contact  📬](#contact)
+- [Contents](#contents)
+- [Basic Overview 📄](#basic-overview-)
+- [Getting Started 🚀](#getting-started-)
+  - [Installing Dependencies 🛠️](#installing-dependencies-️)
+  - [Building a Model 🏗️](#building-a-model-️)
+  - [Layerwise Relevance Propagation (LRP) 🔍](#layerwise-relevance-propagation-lrp-)
+- [Example 🌟](#example-)
+  - [Data 📊](#data-)
+- [References 📚](#references-)
+- [Contact  📬](#contact--)
 
 
 # [Basic Overview 📄](#basic-overview)
@@ -49,7 +50,7 @@ The provided classes and methods take care of the complex task of backpropagatin
 
 # [Getting Started 🚀](#getting-started)
 
-In order to get started clone the GitHub repository to your local machines:
+In order to get started clone the GitHub repository to your local machine:
 ```bash
 git clone https://github.com/ACM40960/DeepRecurrentFactorModels
 ```
@@ -206,7 +207,7 @@ Hence, please refer to the following notebook for the analysis and results:
 - [Replication of Experiments in <i>'Deep Factor Models'</i>](./Notebooks/DeepFactorModels.ipynb)
 
 
-You launch the notebook directly in your browser using binder:
+You can launch the notebook directly in your browser using binder:
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ACM40960/DeepRecurrentFactorModels/main?labpath=Notebooks%2FDeepFactorModels.ipynb)
 
