@@ -207,11 +207,13 @@ Hence, please refer to the following notebook for the analysis and results:
 - [Replication of Experiments in <i>'Deep Factor Models'</i>](./Notebooks/DeepFactorModels.ipynb)
 
 
-You can launch the notebook directly in your browser using binder:
+- You can launch the notebook directly in your browser using binder:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ACM40960/DeepRecurrentFactorModels/main?labpath=Notebooks%2FDeepFactorModels.ipynb)
+    [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ACM40960/DeepRecurrentFactorModels/main?labpath=Notebooks%2FDeepFactorModels.ipynb)
 
-You can find the literature review for this analysis [here](./static/Files/LiteratureReview.pdf).
+- You can find the literature review for this analysis [here](./static/Files/LiteratureReview.pdf).
+
+- For a summary of MSE, RMSE scores for deep recurrent facor models please refer to this [Excel File](./Data/Results/LSTMResults.xlsx).
 
 
 ## [Data 📊](#data)
