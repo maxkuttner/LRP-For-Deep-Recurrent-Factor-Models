@@ -215,6 +215,7 @@ Hence, please refer to the following notebook for the analysis and results:
 
 - For a summary of MSE, RMSE scores for deep recurrent facor models please refer to this [Excel File](./Data/Results/LSTMResults.xlsx).
 
+- Presentation slides 🛝 for the university course can be found [here](./static/Files/presentation.pdf)
 
 ## [Data 📊](#data)
 
