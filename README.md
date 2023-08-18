@@ -217,6 +217,7 @@ Hence, please refer to the following notebook for the analysis and results:
 
 - Presentation slides 🛝 for the university course can be found [here](./static/Files/presentation.pdf)
 
+
 ## [Data 📊](#data)
 
 - We gatherd the factor data from the openly available factor data set provided by [Andrew Y. Chen and Tom Zimmermann](https://www.openassetpricing.com/data/)
