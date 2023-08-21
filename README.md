@@ -52,7 +52,7 @@ The provided classes and methods take care of the complex task of backpropagatin
 
 In order to get started clone the GitHub repository to your local machine:
 ```bash
-git clone https://github.com/ACM40960/DeepRecurrentFactorModels
+git clone https://github.com/mkaywins/LRP-For-Deep-Recurrent-Factor-Models.git
 ```
 
 ## [Installing Dependencies 🛠️](#intalling-dependencies)
