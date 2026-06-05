@@ -184,7 +184,6 @@ def rolling_fit(input_layer, output_layer,
             plot_path = os.path.join(plot_dir, 'rolling_fit_plot.png')
             plt.savefig(plot_path)
         plt.show()
-        plt.show()
 
     print("Rolling window fitting completed.")
     return predictions, relevance
@@ -225,7 +224,6 @@ if __name__ == '__main__':
     custom_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
 
     # # Generate some example training data (replace this with your actual data)
-    import numpy as np
     num_samples = 100
     X_train = np.random.rand(num_samples, timesteps, input_dim)
     y_train = np.random.rand(num_samples, 1)
