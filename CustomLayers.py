@@ -9,14 +9,6 @@ class CustomLSTM(tf.keras.layers.LSTM):
     def __init__(self, units, **kwargs):
         super().__init__(units, **kwargs)
 
-    def build(self, input_shape):
-        super().build(input_shape)
-        # Custom build logic if needed
-
-    def call(self, inputs, **kwargs):
-        # Custom call logic if needed
-        return super().call(inputs, **kwargs)
-    
     def get_lstm_states(self, input_data):
         """computes a forward pass through the lstm layer
 
