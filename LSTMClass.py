@@ -21,10 +21,32 @@ class ActivationLogger(Callback):
         self.activations = {}
 
     def capture_activations(self, model, input_data):
-        for i, layer in enumerate(model.layers):
-            layer_output = layer.output
-            activation_model = Model(inputs=model.input, outputs=layer_output)
-            activations = activation_model.predict(input_data, verbose=False)
+        # Collect every layer's output into a single model and run one forward
+        # pass, instead of rebuilding a separate Model per layer. Some layers
+        # (e.g. CustomLSTM with return_state) expose a list of outputs, so we
+        # flatten the outputs and remember each layer's slice to reassemble.
+        layers = model.layers
+        flat_outputs = []
+        layer_slices = []  # (start, count) into flat_outputs, per layer
+        for layer in layers:
+            out = layer.output
+            if isinstance(out, (list, tuple)):
+                layer_slices.append((len(flat_outputs), len(out)))
+                flat_outputs.extend(out)
+            else:
+                layer_slices.append((len(flat_outputs), 1))
+                flat_outputs.append(out)
+
+        activation_model = Model(inputs=model.input, outputs=flat_outputs)
+        flat_activations = activation_model.predict(input_data, verbose=False)
+        if not isinstance(flat_activations, list):
+            flat_activations = [flat_activations]
+
+        for i, (layer, (start, count)) in enumerate(zip(layers, layer_slices)):
+            if count == 1:
+                activations = flat_activations[start]
+            else:
+                activations = flat_activations[start:start + count]
             self.activations[i] = self.add_activations(activations, layer)
     
     def add_activations(self, activations, layer):
