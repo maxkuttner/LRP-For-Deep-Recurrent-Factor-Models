@@ -173,8 +173,8 @@ Let us see how we computed relevance and conduct relevance propagation in our cu
 input_data = np.random.rand(1, timesteps, input_dim) # sample input
 
 # Copmute LRP for entire network
-custom_model.backpropagate_relevance(input_data, type="arras") # Arras et al. (2019)
-custom_model.backpropagate_relevance(input_data, type="rudder") # Arjona-Medina, et al. (2019)
+custom_model.backpropagate_relevance(input_data, method="arras") # Arras et al. (2019)
+custom_model.backpropagate_relevance(input_data, method="rudder") # Arjona-Medina, et al. (2019)
 ```
 As the input to the model is of dimensions `(timesteps, input_dim) = (5, 16)`, the resulting relevance scores will have the same dimensions.
 
@@ -190,10 +190,10 @@ As the input to the model is of dimensions `(timesteps, input_dim) = (5, 16)`, t
 
 ```python
 # aggregate relvance across time - use the most recent input to the layer for relvance 
-custom_model.backpropagate_relevance(input_data, aggregate=False, type="arras") 
+custom_model.backpropagate_relevance(input_data, aggregate=False, method="arras") 
 
 # aggregate relvance across time - average relevance of features across time
-custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
+custom_model.backpropagate_relevance(input_data, aggregate=True, method="rudder")
 ```
 
 

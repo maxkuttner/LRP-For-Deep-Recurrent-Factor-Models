@@ -73,7 +73,7 @@ class CustomModel(tf.keras.Model):
         # exclude Dropout from the list of layers - makes it easier to do LRP
         return [layer for layer in super().layers if not isinstance(layer, Dropout)]
 
-    def backpropagate_relevance(self, input_data, aggregate=False, type="arras"):
+    def backpropagate_relevance(self, input_data, aggregate=False, method="arras"):
         
         # log activations of network
         activation_logger = ActivationLogger()
@@ -117,7 +117,7 @@ class CustomModel(tf.keras.Model):
                 
                 if i == 0:
                     # choose type of LRP rule
-                    if type == "arras":
+                    if method == "arras":
                         Rj = current_layer.lstm_lrp_arras(input_data, Rj, aggregate)
                     else:
                         Rj = current_layer.lstm_lrp_rudder(input_data, Rj, aggregate)
@@ -127,7 +127,7 @@ class CustomModel(tf.keras.Model):
                     input_tmp = activation_logger.activations[i - 1]["output"]
                     
                     # choose type of LRP rule
-                    if type == "arras":
+                    if method == "arras":
                         Rj = current_layer.lstm_lrp_arras(input_tmp, Rj, aggregate)
                     else:
                         Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
