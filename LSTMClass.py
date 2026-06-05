@@ -51,7 +51,7 @@ class CustomModel(tf.keras.Model):
         # exclude Dropout from the list of layers - makes it easier to do LRP
         return [layer for layer in super().layers if not isinstance(layer, Dropout)]
 
-    def backpropagate_relevance(self, input_data, aggregate, type="arras"):
+    def backpropagate_relevance(self, input_data, aggregate=False, type="arras"):
         
         # log activations of network
         activation_logger = ActivationLogger()
