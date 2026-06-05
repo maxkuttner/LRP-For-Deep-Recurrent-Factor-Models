@@ -26,18 +26,18 @@ to test <b>Deep Recurrent Factor Models</b> on the US-stock market.
 
 # [Contents](#contents)
 
-- [Basic Overview 📄](#basic-overview-)
-- [Getting Started 🚀](#getting-started-)
-  - [Installing Dependencies 🛠️](#installing-dependencies-️)
-  - [Building a Model 🏗️](#building-a-model-️)
-  - [Layerwise Relevance Propagation (LRP) 🔍](#lrp)
-- [Example 🌟](#example-)
-  - [Data 📊](#data-)
-- [References 📚](#references-)
-- [Contact  📬](#contact--)
+- [Basic Overview](#basic-overview)
+- [Getting Started](#getting-started)
+  - [Installing Dependencies](#installing-dependencies)
+  - [Building a Model](#building-a-model)
+  - [Layerwise Relevance Propagation (LRP)](#lrp)
+- [Example](#example)
+  - [Data](#data)
+- [References](#references)
+- [Contact](#contact)
 
 
-# [Basic Overview 📄](#basic-overview)
+# [Basic Overview](#basic-overview)
 Welcome to the **Deep Recurrent Factor Model + LRP** Repository. 
 By building upon familiar modules like `Keras` and `Tensorflow`, this repository allows you to create deep LSTM networks and fascilitate LRP through the provided classes and methods.
 
@@ -48,14 +48,14 @@ The provided classes and methods take care of the complex task of backpropagatin
  In an [Example](#example-) we explore and replicate the approach suggested in the paper [*Deep Recurrent Factor Model: Interpretable Non-Linear and Time-Varying Multi-Factor Model*](https://arxiv.org/pdf/1901.11493.pdf) to test our implementation of customs LSTM models with LRP on the US-stock market.
 
 
-# [Getting Started 🚀](#getting-started)
+# [Getting Started](#getting-started)
 
 In order to get started clone the GitHub repository to your local machine:
 ```bash
 git clone https://github.com/mkaywins/LRP-For-Deep-Recurrent-Factor-Models.git
 ```
 
-## [Installing Dependencies 🛠️](#intalling-dependencies)
+## [Installing Dependencies](#intalling-dependencies)
 - Make sure to have python 3.11+ installed - if not, download the  [latest version of Python 3](https://www.python.org/downloads/).
 
 - Install all necessary dependencies:
@@ -65,7 +65,7 @@ git clone https://github.com/mkaywins/LRP-For-Deep-Recurrent-Factor-Models.git
     pip install -r requirements.txt
     ```
 
-## [Building a Model 🏗️](#build-a-model)
+## [Building a Model](#build-a-model)
 
 If you want to build your own deep LSTM model, then you need to 
 use the [Functional API by Keras](https://keras.io/guides/functional_api/) in cunjunction with the provided LSTM layer `CustomLSTM` and the provided model class `CustomModel`.
@@ -120,7 +120,7 @@ custom_model.fit(X_train, y_train, epochs=10, batch_size=32)
 
 ```
 
-## [Layerwise Relevance Propagation (LRP) 🔍](#lrp)
+## [Layerwise Relevance Propagation (LRP)](#lrp)
 
 After fitting the model we can proceed to compute the relevance for each input feature.
 To backpropagate relevance through the entire network, i.e. from the output layer to the input layer,
@@ -197,7 +197,7 @@ custom_model.backpropagate_relevance(input_data, aggregate=True, type="rudder")
 ```
 
 
-# [Example 🌟](#example)
+# [Example](#example)
 
 We provide an example of the classes and methods in this repository and 
 test our implementation on the US-stock market.
@@ -215,10 +215,10 @@ Hence, please refer to the following notebook for the analysis and results:
 
 - For a summary of MSE, RMSE scores for deep recurrent facor models please refer to this [Excel File](./Data/Results/LSTMResults.xlsx).
 
-- Presentation slides 🛝 for the university course can be found [here](./static/Files/presentation.pdf)
+- Presentation slides for the university course can be found [here](./static/Files/presentation.pdf)
 
 
-## [Data 📊](#data)
+## [Data](#data)
 
 - We gatherd the factor data from the openly available factor data set provided by [Andrew Y. Chen and Tom Zimmermann](https://www.openassetpricing.com/data/)
 
@@ -226,7 +226,7 @@ Hence, please refer to the following notebook for the analysis and results:
 
 - We describe how we try to map features from the [Open Asset Pricing Data Set](https://www.openassetpricing.com/data/) to factors used in the paper on [deep recurrent factor models]((https://arxiv.org/pdf/1901.11493.pdf)) in [here](./static/Data/FactorDescription.md).
 
-# [References 📚](#references)
+# [References](#references)
 
 
 - Arjona-Medina, J. A., Gillhofer, M., Widrich, M., Unterthiner, T., Brandstetter, J., & Hochreiter, S. (2019). Rudder: Return decomposition for delayed rewards. Advances in Neural Information Processing Systems, 32.
@@ -240,8 +240,7 @@ Hence, please refer to the following notebook for the analysis and results:
 - Nakagawa, K., Ito, T., Abe, M., & Izumi, K. (2019). Deep recurrent factor model: interpretable non-linear and time-varying multi-factor model. arXiv preprint arXiv:1901.11493.
 
 
-# [Contact  📬](#contact)
+# [Contact](#contact)
 
 - Maximilian Kuttner: maximilian.kuttner@ucdconnect.ie
-- Alissia Hrustsova:  alissia.hrustsova@ucdconnect.ie
 
