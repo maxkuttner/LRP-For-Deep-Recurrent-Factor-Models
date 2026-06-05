@@ -129,22 +129,27 @@ class CustomLSTM(tf.keras.layers.LSTM):
         # Get the LSTM weights and biases
         b = self.get_weights()[2]  # Biases (4M,)
         b_i, b_f, b_c, b_o = tf.split(b, num_or_size_splits=4, axis=0) # (M,), (M,), (M,), (M,)
-        
-        
-        for t in reversed(range(self.timesteps)): 
-            zt = np.array(self.cell_input_signal)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            it = np.array(self.input_gate_activation)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            
+
+        # Convert the per-timestep signal/gate lists to arrays once up front
+        # instead of rebuilding them inside the loop. Shape: (timesteps, batch, M)
+        cell_input_signal = np.array(self.cell_input_signal)
+        input_gate = np.array(self.input_gate_activation)
+        forget_gate = np.array(self.forget_gate_activation)
+
+        for t in reversed(range(self.timesteps)):
+            zt = cell_input_signal[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+            it = input_gate[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+
             # compute product between input signal and input gate
             ap = zt * it
-            
-            
+
+
             if(t == self.timesteps - 1):
                 # Rp = ak * ck
-                Rp = ap * ck 
+                Rp = ap * ck
             else:
                 # R_p-T = ( prod_{t=1}^T a_{f-t+1} ) * a_{p-T} * c_k , where c_k = cT
-                Rp = ap * np.multiply.reduce(np.array(self.forget_gate_activation)[t:, 0, :]) * ck 
+                Rp = ap * np.multiply.reduce(forget_gate[t:, 0, :]) * ck
             
             # using linear rule
             relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rp, nlower))
@@ -203,13 +208,18 @@ class CustomLSTM(tf.keras.layers.LSTM):
         # Collect relevance scores
         relevance = []
 
-        for t in reversed(range(self.timesteps)): 
-            
-            
+        # Convert the per-timestep signal/gate lists to arrays once up front
+        # instead of rebuilding them inside the loop. Shape: (timesteps, batch, M)
+        cell_input_signal = np.array(self.cell_input_signal)
+        input_gate = np.array(self.input_gate_activation)
+
+        for t in reversed(range(self.timesteps)):
+
+
             # rules according to Rudder
-            zt = np.array(self.cell_input_signal)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            it = np.array(self.input_gate_activation)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            
+            zt = cell_input_signal[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+            it = input_gate[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+
             
             Rzt =  (zt * it) * RyT / cT
             
