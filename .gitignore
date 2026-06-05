@@ -1,3 +1,4 @@
 venv/
+.venv/
 Old/
 __pycache__/
