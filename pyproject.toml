@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deep-recurrent-factor-models"
+version = "0.1.0"
+description = "Layer-wise relevance propagation for deep recurrent (LSTM) factor models"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "License" }
+dynamic = ["dependencies"]
+
+# The modules live flat at the repo root (CustomLayers.py, LRPMethods.py, ...).
+# Declaring them here lets `pip install -e .` put them on the import path so
+# `from CustomLayers import CustomLSTM` resolves regardless of the working
+# directory, instead of only when run from the repo root.
+[tool.setuptools]
+py-modules = ["CustomLayers", "LRPMethods", "LSTMClass", "Preprocessing"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }

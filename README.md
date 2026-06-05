@@ -65,6 +65,12 @@ git clone https://github.com/mkaywins/LRP-For-Deep-Recurrent-Factor-Models.git
     pip install -r requirements.txt
     ```
 
+- Optionally, install the project itself so its modules (`CustomLayers`, `LSTMClass`, ...) import from any working directory:
+
+    ```bash
+    pip install -e .
+    ```
+
 ## [Building a Model](#build-a-model)
 
 If you want to build your own deep LSTM model, then you need to 
