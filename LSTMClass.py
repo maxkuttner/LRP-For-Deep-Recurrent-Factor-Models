@@ -63,13 +63,9 @@ class CustomModel(tf.keras.Model):
         # iterate over the layers of the network in reversed order
         for i in reversed(range(len(self.layers))):
 
-            # get current layer
+            # get current layer (the layers property already excludes Dropout)
             current_layer = self.layers[i]
 
-            # skip drouput layer
-            if isinstance(current_layer, Dropout):
-                continue
-            
             # handle: Dense layer
             if isinstance(current_layer, Dense):
                 
