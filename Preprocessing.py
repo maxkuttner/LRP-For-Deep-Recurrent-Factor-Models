@@ -43,7 +43,7 @@ def process_data_with_factors(csv_file_path, factor_selection):
     # auto_adjust=False keeps the 'Adj Close' column that current yfinance
     # versions otherwise drop.
     sp500 = yf.download('^SPX', start=date_range[0], end=date_range[1], auto_adjust=False)
-    print("Download: DONE ✔️")
+    print("Download: DONE")
     # Resample to monthly frequency ('ME' = month-end) and calculate returns
     sp500 = sp500["Adj Close"].resample('ME').last().pct_change().reset_index()
 

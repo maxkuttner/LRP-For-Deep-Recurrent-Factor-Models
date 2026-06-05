@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 # LRP
 from LRPMethods import lrp_linear
-print("LSTM Load Dependencies: DONE ✔️\n\n")
 
 # Define your custom callback to capture activations
 class ActivationLogger(Callback):
