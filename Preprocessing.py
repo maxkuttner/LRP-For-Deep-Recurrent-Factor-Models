@@ -44,8 +44,16 @@ def process_data_with_factors(csv_file_path, factor_selection):
     # versions otherwise drop.
     sp500 = yf.download('^SPX', start=date_range[0], end=date_range[1], auto_adjust=False)
     print("Download: DONE")
-    # Resample to monthly frequency ('ME' = month-end) and calculate returns
-    sp500 = sp500["Adj Close"].resample('ME').last().pct_change().reset_index()
+
+    # Current yfinance returns a MultiIndex column (field, ticker) even for a
+    # single ticker; drop the ticker level so 'Adj Close' is selectable as a Series.
+    if isinstance(sp500.columns, pd.MultiIndex):
+        sp500.columns = sp500.columns.droplevel(1)
+
+    # Resample to monthly frequency (month-end) and calculate returns.
+    # NB: 'M' is correct for the pinned pandas 2.0.3; the 'ME' alias only
+    # exists from pandas 2.2 onwards.
+    sp500 = sp500["Adj Close"].resample('M').last().pct_change().reset_index()
 
     # Rename Adj. Close to 'Return' and derive the same monthly key
     sp500.rename(columns={"Adj Close": "Return", "Date": "date"}, inplace=True)
