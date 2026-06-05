@@ -242,5 +242,5 @@ Hence, please refer to the following notebook for the analysis and results:
 
 # [Contact](#contact)
 
-- Maximilian Kuttner: maximilian.kuttner@ucdconnect.ie
+- Maximilian Kuttner: mkuttner@proton.me
 
