@@ -32,11 +32,12 @@ def process_data_with_factors(csv_file_path, factor_selection):
     # Remove NA rows
     factors_filtered.dropna(inplace=True)
 
+    # Key the factors on the calendar month so the merge below aligns rows by
+    # date rather than by (fragile) positional row order.
+    factors_filtered["month"] = factors_filtered["date"].dt.to_period("M")
+
     # Get date range of available data
     date_range = [factors_filtered["date"].min(), factors_filtered["date"].max()]
-
-    # Reset the index and merge based on index
-    factors_filtered.reset_index(drop="index", inplace=True)
 
     # Download stock data for the SP500 etf SPX
     print("Download data from yahoo finance ...")
@@ -45,20 +46,19 @@ def process_data_with_factors(csv_file_path, factor_selection):
     # Resample to monthly frequency and calculate monthly returns
     sp500 = sp500["Adj Close"].resample('M').last().pct_change().reset_index()
 
-    # Merge the SP500 Series and the factors DataFrame based on the index
-    sp500_with_factors = pd.merge(sp500, factors_filtered[factor_selection], left_index=True, right_index=True, how='left')
+    # Rename Adj. Close to 'Return' and derive the same monthly key
+    sp500.rename(columns={"Adj Close": "Return", "Date": "date"}, inplace=True)
+    sp500["month"] = sp500["date"].dt.to_period("M")
 
-    # Set the index back to the original date index
-    sp500 = sp500_with_factors.set_index('Date')
+    # Merge returns and factors on the monthly key so they stay date-aligned
+    sp500 = pd.merge(sp500, factors_filtered.drop(columns="date"),
+                     on="month", how="left")
 
-    # Rename Adj. Close to 'Return'
-    sp500.rename(columns={"Adj Close": "Return"}, inplace=True)
+    # Index by date and drop the helper key
+    sp500 = sp500.set_index("date").drop(columns="month")
 
     # Add returns as a feature
     sp500["ReturnFactor"] = sp500["Return"]
-
-    # Clean up
-    del sp500_with_factors, factors_filtered
 
     return sp500
 
