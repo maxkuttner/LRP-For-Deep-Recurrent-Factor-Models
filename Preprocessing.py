@@ -1,6 +1,5 @@
 import pandas as pd
 import yfinance as yf
-import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
@@ -32,33 +31,43 @@ def process_data_with_factors(csv_file_path, factor_selection):
     # Remove NA rows
     factors_filtered.dropna(inplace=True)
 
+    # Key the factors on the calendar month so the merge below aligns rows by
+    # date rather than by (fragile) positional row order.
+    factors_filtered["month"] = factors_filtered["date"].dt.to_period("M")
+
     # Get date range of available data
     date_range = [factors_filtered["date"].min(), factors_filtered["date"].max()]
 
-    # Reset the index and merge based on index
-    factors_filtered.reset_index(drop="index", inplace=True)
-
     # Download stock data for the SP500 etf SPX
     print("Download data from yahoo finance ...")
-    sp500 = yf.download('^SPX', start=date_range[0], end=date_range[1])
-    print("Download: DONE ✔️")
-    # Resample to monthly frequency and calculate monthly returns
+    # auto_adjust=False keeps the 'Adj Close' column that current yfinance
+    # versions otherwise drop.
+    sp500 = yf.download('^SPX', start=date_range[0], end=date_range[1], auto_adjust=False)
+    print("Download: DONE")
+
+    # Current yfinance returns a MultiIndex column (field, ticker) even for a
+    # single ticker; drop the ticker level so 'Adj Close' is selectable as a Series.
+    if isinstance(sp500.columns, pd.MultiIndex):
+        sp500.columns = sp500.columns.droplevel(1)
+
+    # Resample to monthly frequency (month-end) and calculate returns.
+    # NB: 'M' is correct for the pinned pandas 2.0.3; the 'ME' alias only
+    # exists from pandas 2.2 onwards.
     sp500 = sp500["Adj Close"].resample('M').last().pct_change().reset_index()
 
-    # Merge the SP500 Series and the factors DataFrame based on the index
-    sp500_with_factors = pd.merge(sp500, factors_filtered[factor_selection], left_index=True, right_index=True, how='left')
+    # Rename Adj. Close to 'Return' and derive the same monthly key
+    sp500.rename(columns={"Adj Close": "Return", "Date": "date"}, inplace=True)
+    sp500["month"] = sp500["date"].dt.to_period("M")
 
-    # Set the index back to the original date index
-    sp500 = sp500_with_factors.set_index('Date')
+    # Merge returns and factors on the monthly key so they stay date-aligned
+    sp500 = pd.merge(sp500, factors_filtered.drop(columns="date"),
+                     on="month", how="left")
 
-    # Rename Adj. Close to 'Return'
-    sp500.rename(columns={"Adj Close": "Return"}, inplace=True)
+    # Index by date and drop the helper key
+    sp500 = sp500.set_index("date").drop(columns="month")
 
     # Add returns as a feature
     sp500["ReturnFactor"] = sp500["Return"]
-
-    # Clean up
-    del sp500_with_factors, factors_filtered
 
     return sp500
 

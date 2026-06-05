@@ -9,14 +9,6 @@ class CustomLSTM(tf.keras.layers.LSTM):
     def __init__(self, units, **kwargs):
         super().__init__(units, **kwargs)
 
-    def build(self, input_shape):
-        super().build(input_shape)
-        # Custom build logic if needed
-
-    def call(self, inputs, **kwargs):
-        # Custom call logic if needed
-        return super().call(inputs, **kwargs)
-    
     def get_lstm_states(self, input_data):
         """computes a forward pass through the lstm layer
 
@@ -103,60 +95,69 @@ class CustomLSTM(tf.keras.layers.LSTM):
             self.cell_input_signal.append( np.array(cell_input_signal) ) # (time_steps, batch_size, dimensions )
             self.cell_state_signal.append( np.array(cell_state_signal) ) # (time_steps, batch_size, dimensions )
 
+    def _reduce_relevance(self, rel_prev, aggregate):
+        """Collapse a (timesteps, M) relevance array down to (M,).
+
+        Only relevant when the layer was built with return_sequences=True, in
+        which case rel_prev carries one relevance vector per timestep. We either
+        average across time (aggregate=True) or keep the most recent timestep.
+        """
+        if len(rel_prev.shape) == 2 and aggregate:
+            return np.mean(rel_prev, axis=0)
+        elif len(rel_prev.shape) == 2 and not aggregate:
+            return rel_prev[-1, :]
+        return rel_prev
+
+    def _cell_input_weights(self):
+        """Return the (D, M) kernel and (M,) bias of the cell-input ('g') gate."""
+        w_c = tf.split(self.get_weights()[0], num_or_size_splits=4, axis=1)[2]
+        b_c = tf.split(self.get_weights()[2], num_or_size_splits=4, axis=0)[2]
+        return np.array(w_c), np.array(b_c)
+
     def lstm_lrp_arras(self, input_data, rel_prev, aggregate=True):
-        
+
         # compute all activations (gates and signals for lstm layer)
         self.get_lstm_states(input_data)
 
-        if len(rel_prev.shape) == 2 and aggregate:
-            # print("DO AGGREGATE")
-            rel_prev = np.mean(rel_prev, axis=0)
-            
-        elif len(rel_prev.shape) == 2 and not aggregate:
-            # print("DO NOT AGGREGATE")
-            rel_prev = rel_prev[-1, :]
-
-        
-        # Extract the last cell state
-        cT = np.array(self.cell_states)[-1, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions, )
+        rel_prev = self._reduce_relevance(rel_prev, aggregate)
 
         # Relevance for the final step -> Leila Arras et al. (2019) in the book Explainable AI (Chpt. 11) write:
-        # ck is a constant term that is used to redistrubte the relevance across time - 
-        # we will take the previous relevance from the layer above and set ck equal to this value  
+        # ck is a constant term that is used to redistrubte the relevance across time -
+        # we will take the previous relevance from the layer above and set ck equal to this value
         ck = rel_prev
 
 
         relevance = []
-        
+
         nlower = input_data.shape[2]
-        
-        # Get the LSTM weights and biases
-        W = self.get_weights()[0]  # LSTM weights (D, 4M) - 4 because of 4 gates
-        w_i, w_f, w_c, w_o = tf.split(W, num_or_size_splits=4, axis=1) # (D,M), (D,M), (D,M), (D,M)
-        
-        # Get the LSTM weights and biases
-        b = self.get_weights()[2]  # Biases (4M,)
-        b_i, b_f, b_c, b_o = tf.split(b, num_or_size_splits=4, axis=0) # (M,), (M,), (M,), (M,)
-        
-        
-        for t in reversed(range(self.timesteps)): 
-            zt = np.array(self.cell_input_signal)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            it = np.array(self.input_gate_activation)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            
+
+        # cell-input ('g') gate kernel (D, M) and bias (M,)
+        w_c, b_c = self._cell_input_weights()
+
+        # Convert the per-timestep signal/gate lists to arrays once up front
+        # instead of rebuilding them inside the loop. Shape: (timesteps, batch, M)
+        cell_input_signal = np.array(self.cell_input_signal)
+        input_gate = np.array(self.input_gate_activation)
+        forget_gate = np.array(self.forget_gate_activation)
+
+        for t in reversed(range(self.timesteps)):
+            zt = cell_input_signal[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+            it = input_gate[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+
             # compute product between input signal and input gate
             ap = zt * it
-            
-            
+
+
             if(t == self.timesteps - 1):
                 # Rp = ak * ck
-                Rp = ap * ck 
+                Rp = ap * ck
             else:
                 # R_p-T = ( prod_{t=1}^T a_{f-t+1} ) * a_{p-T} * c_k , where c_k = cT
-                Rp = ap * np.multiply.reduce(np.array(self.forget_gate_activation)[t:, 0, :]) * ck 
+                Rp = ap * np.multiply.reduce(forget_gate[t:, 0, :]) * ck
             
             # using linear rule
-            relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rp, nlower))
-        
+            relevance.append(lrp_linear(w_c, b_c, input_data[0, t, :], zt, Rp, nlower))
+
         return np.array(relevance)
 
 
@@ -184,26 +185,15 @@ class CustomLSTM(tf.keras.layers.LSTM):
         
         
         #print("lstm_lrp_rudder - aggregate: ",aggregate)
-        
-        if len(rel_prev.shape) == 2 and aggregate:
-            # print("DO AGGREGATE")
-            rel_prev = np.mean(rel_prev, axis=0)
-            
-        elif len(rel_prev.shape) == 2 and not aggregate:
-            # print("DO NOT AGGREGATE")
-            rel_prev = rel_prev[-1, :]
-        
+
+        rel_prev = self._reduce_relevance(rel_prev, aggregate)
+
         # initialise relevance
         RyT = rel_prev # (M, )  M...output dim of current layer
-        
-        # Get the LSTM weights and biases
-        W = self.get_weights()[0]  # LSTM weights (D, 4M) - 4 because of 4 gates
-        w_i, w_f, w_c, w_o = tf.split(W, num_or_size_splits=4, axis=1) # (D,M), (D,M), (D,M), (D,M)
-        
-        # Get the LSTM weights and biases
-        b = self.get_weights()[2]  # Biases (4M,)
-        b_i, b_f, b_c, b_o = tf.split(b, num_or_size_splits=4, axis=0) # (M,), (M,), (M,), (M,)
-    
+
+        # cell-input ('g') gate kernel (D, M) and bias (M,)
+        w_c, b_c = self._cell_input_weights()
+
         # Extract the last cell state
         cT = np.array(self.cell_states)[-1, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions, )
 
@@ -211,13 +201,18 @@ class CustomLSTM(tf.keras.layers.LSTM):
         # Collect relevance scores
         relevance = []
 
-        for t in reversed(range(self.timesteps)): 
-            
-            
+        # Convert the per-timestep signal/gate lists to arrays once up front
+        # instead of rebuilding them inside the loop. Shape: (timesteps, batch, M)
+        cell_input_signal = np.array(self.cell_input_signal)
+        input_gate = np.array(self.input_gate_activation)
+
+        for t in reversed(range(self.timesteps)):
+
+
             # rules according to Rudder
-            zt = np.array(self.cell_input_signal)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            it = np.array(self.input_gate_activation)[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
-            
+            zt = cell_input_signal[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+            it = input_gate[t, 0, :] # (timesteps, batch_size, dimensions) -> (dimensions,)
+
             
             Rzt =  (zt * it) * RyT / cT
             
@@ -232,7 +227,7 @@ class CustomLSTM(tf.keras.layers.LSTM):
             nlower = input_data.shape[2]
             
             # using linear rule
-            relevance.append(lrp_linear(np.array(w_c), np.array(b_c), input_data[0, t, :], zt, Rzt, nlower))
+            relevance.append(lrp_linear(w_c, b_c, input_data[0, t, :], zt, Rzt, nlower))
         
         
         #print("LRP LSTM - DONE")

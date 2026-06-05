@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 # LRP
 from LRPMethods import lrp_linear
-print("LSTM Load Dependencies: DONE ✔️\n\n")
 
 # Define your custom callback to capture activations
 class ActivationLogger(Callback):
@@ -21,10 +20,32 @@ class ActivationLogger(Callback):
         self.activations = {}
 
     def capture_activations(self, model, input_data):
-        for i, layer in enumerate(model.layers):
-            layer_output = layer.output
-            activation_model = Model(inputs=model.input, outputs=layer_output)
-            activations = activation_model.predict(input_data, verbose=False)
+        # Collect every layer's output into a single model and run one forward
+        # pass, instead of rebuilding a separate Model per layer. Some layers
+        # (e.g. CustomLSTM with return_state) expose a list of outputs, so we
+        # flatten the outputs and remember each layer's slice to reassemble.
+        layers = model.layers
+        flat_outputs = []
+        layer_slices = []  # (start, count) into flat_outputs, per layer
+        for layer in layers:
+            out = layer.output
+            if isinstance(out, (list, tuple)):
+                layer_slices.append((len(flat_outputs), len(out)))
+                flat_outputs.extend(out)
+            else:
+                layer_slices.append((len(flat_outputs), 1))
+                flat_outputs.append(out)
+
+        activation_model = Model(inputs=model.input, outputs=flat_outputs)
+        flat_activations = activation_model.predict(input_data, verbose=False)
+        if not isinstance(flat_activations, list):
+            flat_activations = [flat_activations]
+
+        for i, (layer, (start, count)) in enumerate(zip(layers, layer_slices)):
+            if count == 1:
+                activations = flat_activations[start]
+            else:
+                activations = flat_activations[start:start + count]
             self.activations[i] = self.add_activations(activations, layer)
     
     def add_activations(self, activations, layer):
@@ -51,7 +72,7 @@ class CustomModel(tf.keras.Model):
         # exclude Dropout from the list of layers - makes it easier to do LRP
         return [layer for layer in super().layers if not isinstance(layer, Dropout)]
 
-    def backpropagate_relevance(self, input_data, aggregate, type="arras"):
+    def backpropagate_relevance(self, input_data, aggregate=False, method="arras"):
         
         # log activations of network
         activation_logger = ActivationLogger()
@@ -63,13 +84,9 @@ class CustomModel(tf.keras.Model):
         # iterate over the layers of the network in reversed order
         for i in reversed(range(len(self.layers))):
 
-            # get current layer
+            # get current layer (the layers property already excludes Dropout)
             current_layer = self.layers[i]
 
-            # skip drouput layer
-            if isinstance(current_layer, Dropout):
-                continue
-            
             # handle: Dense layer
             if isinstance(current_layer, Dense):
                 
@@ -99,7 +116,7 @@ class CustomModel(tf.keras.Model):
                 
                 if i == 0:
                     # choose type of LRP rule
-                    if type == "arras":
+                    if method == "arras":
                         Rj = current_layer.lstm_lrp_arras(input_data, Rj, aggregate)
                     else:
                         Rj = current_layer.lstm_lrp_rudder(input_data, Rj, aggregate)
@@ -109,7 +126,7 @@ class CustomModel(tf.keras.Model):
                     input_tmp = activation_logger.activations[i - 1]["output"]
                     
                     # choose type of LRP rule
-                    if type == "arras":
+                    if method == "arras":
                         Rj = current_layer.lstm_lrp_arras(input_tmp, Rj, aggregate)
                     else:
                         Rj = current_layer.lstm_lrp_rudder(input_tmp, Rj, aggregate)
@@ -188,7 +205,6 @@ def rolling_fit(input_layer, output_layer,
             plot_path = os.path.join(plot_dir, 'rolling_fit_plot.png')
             plt.savefig(plot_path)
         plt.show()
-        plt.show()
 
     print("Rolling window fitting completed.")
     return predictions, relevance
@@ -229,7 +245,6 @@ if __name__ == '__main__':
     custom_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
 
     # # Generate some example training data (replace this with your actual data)
-    import numpy as np
     num_samples = 100
     X_train = np.random.rand(num_samples, timesteps, input_dim)
     y_train = np.random.rand(num_samples, 1)
